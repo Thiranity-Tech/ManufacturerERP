@@ -1,0 +1,39 @@
+{
+  "name": "manufacturer-erp",
+  "productName": "Manufacturer ERP",
+  "version": "1.0.0",
+  "description": "Manufacturer ERP - dispatch, sales and vendor procurement",
+  "main": "electron/main.cjs",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "start": "vite build && electron .",
+    "dist": "vite build && electron-builder --win"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "tailwindcss": "^4.0.0",
+    "vite": "^6.0.0"
+  },
+  "build": {
+    "appId": "com.manufacturer.erp",
+    "productName": "Manufacturer ERP",
+    "directories": { "output": "release" },
+    "files": ["dist/**/*", "electron/**/*", "package.json"],
+    "win": {
+      "target": ["nsis", "portable"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

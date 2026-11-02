@@ -1,0 +1,48 @@
+
+.erp-access-denied {
+  margin: 35px;
+  padding: 45px 25px;
+  background: #fff;
+  border: 1px solid #e5eaf2;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.erp-access-denied-icon {
+  font-size: 35px;
+  margin-bottom: 15px;
+}
+
+.erp-access-denied h2 {
+  color: #bd4242;
+  font-size: 20px;
+}
+
+.erp-access-denied p {
+  color: #8290a5;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.app-loading {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #f5f7fb;
+  color: #26334b;
+}
+
+.erp-page-content {
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+@media (max-width: 700px) {
+  .erp-access-denied {
+    margin: 15px;
+    padding: 30px 15px;
+  }
+}

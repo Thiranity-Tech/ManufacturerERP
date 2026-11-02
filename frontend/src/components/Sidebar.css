@@ -1,0 +1,16 @@
+{
+  label: "Inventory",
+  id: "inventory"
+},
+{
+  label: "Procurement",
+  id: "procurement"
+},
+{
+  label: "Manufacturing",
+  id: "manufacturing"
+},
+{
+  label: "Dispatch",
+  id: "dispatch"
+}
