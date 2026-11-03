@@ -96,9 +96,10 @@ function Workspace({ session, onSignOut }) {
   useEffect(() => { load(); }, []);
 
   async function addRecord(table, values) {
-    const { error: insertError } = await supabase.from(table).insert({ ...values, organization_id: workspace.id });
-    if (insertError) { setError(insertError.message); return; }
+    const { data, error: insertError } = await supabase.from(table).insert({ ...values, organization_id: workspace.id }).select().single();
+    if (insertError) { setError(insertError.message); return null; }
     await load();
+    return data;
   }
   const stats = useMemo(() => ({ stock: products.reduce((n, row) => n + Number(row.stock), 0), materials: materials.reduce((n, row) => n + Number(row.stock), 0), sales: sales.reduce((n, row) => n + Number(row.grand_total), 0) }), [products, materials, sales]);
   const role = workspace?.role || "employee";
@@ -119,12 +120,35 @@ function Module({ active, role, stats, products, materials, sales, addRecord }) 
   if (active === "expenses") return <OperationalModule icon={<ReceiptIndianRupee />} title="Expenses" description="Record operating expenses by category and use them in your profit reporting." steps={["Add expense", "Classify category", "Review spending"]} />;
   if (active === "financial") return <OperationalModule icon={<FileBarChart />} title="Financial data" description="Review sales, procurement costs, expenses, receivables, and operating profitability." steps={["Sales summary", "Cost analysis", "Financial export"]} />;
   if (active === "people") return <OperationalModule icon={<Users />} title="People management & attendance" description="Manage team access, roles, departments, and daily attendance from one administration area." steps={["Invite employee", "Assign role", "Record attendance"]} />;
-  if (active === "process-builder" && role === "superadmin") return <ProcessBuilder products={products} onSave={(data) => addRecord("process_definitions", data)} />;
+  if (active === "process-builder" && role === "superadmin") return <ProcessBuilder products={products} onAddProduct={(data) => addRecord("products", data)} onSaveProcess={(data) => addRecord("process_definitions", data)} />;
   return <OperationalModule icon={<Settings />} title="Workspace settings" description="Configure your company workspace and operational preferences." steps={["Organization profile", "Access control", "Data preferences"]} />;
 }
 
 function OperationalModule({ icon, title, description, steps }) { return <section className="panel operational-module"><span className="module-icon">{icon}</span><h3>{title}</h3><p>{description}</p><div className="process-steps">{steps.map((step, index) => <span key={step}><b>{index + 1}</b>{step}</span>)}</div></section>; }
-function ProcessBuilder({ products, onSave }) { const [mode, setMode] = useState("automatic"); const [name, setName] = useState(""); const [productId, setProductId] = useState(""); const save = () => { if (!name.trim()) return; onSave({ name: name.trim(), product_id: productId || null, material_fetch_mode: mode }); setName(""); setProductId(""); }; return <section className="panel process-builder"><span className="module-icon"><Wrench /></span><h3>Process builder</h3><p>Define how a specific product obtains its materials before production begins.</p><div className="builder-fields"><Field label="Process name" value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Gear assembly" /><label className="field"><span>Finished product (optional)</span><select value={productId} onChange={(event) => setProductId(event.target.value)}><option value="">General process</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label></div><div className="fetch-options"><button type="button" className={mode === "automatic" ? "selected" : ""} onClick={() => setMode("automatic")}><strong>Automatic material fetch</strong><span>Reserve materials from inventory according to the product process and bill of materials.</span></button><button type="button" className={mode === "manual" ? "selected" : ""} onClick={() => setMode("manual")}><strong>Manual material fetch</strong><span>Require an operator to select and issue materials before the process starts.</span></button></div><button type="button" className="primary-button compact builder-save" onClick={save}>Save process rule</button><p className="builder-note">Selected mode: <b>{mode === "automatic" ? "Automatic material fetch" : "Manual material fetch"}</b>. This rule is saved per process/product.</p></section>; }
+function ProcessBuilder({ products, onAddProduct, onSaveProcess }) {
+  const [productId, setProductId] = useState("");
+  const [newProduct, setNewProduct] = useState("");
+  const [stepCount, setStepCount] = useState(1);
+  const [steps, setSteps] = useState([{ name: "", mode: "automatic" }]);
+  const [message, setMessage] = useState("");
+
+  function setCount(value) {
+    const count = Math.max(1, Math.min(12, Number(value) || 1));
+    setStepCount(count);
+    setSteps((current) => Array.from({ length: count }, (_, index) => current[index] || { name: "", mode: "automatic" }));
+  }
+  function updateStep(index, patch) { setSteps((current) => current.map((step, stepIndex) => stepIndex === index ? { ...step, ...patch } : step)); }
+  async function save() {
+    if (!productId && !newProduct.trim()) { setMessage("Choose an existing product or create a new product first."); return; }
+    if (steps.some((step) => !step.name.trim())) { setMessage("Give every process step a name."); return; }
+    setMessage("Saving process plan…");
+    let id = productId;
+    if (!id) { const product = await onAddProduct({ name: newProduct.trim(), stock: 0, price: 0 }); if (!product) { setMessage("Could not create the product."); return; } id = product.id; }
+    for (const [index, step] of steps.entries()) await onSaveProcess({ product_id: id, name: `${index + 1}. ${step.name.trim()}`, material_fetch_mode: step.mode });
+    setMessage("Product process plan saved successfully."); setProductId(""); setNewProduct(""); setCount(1); setSteps([{ name: "", mode: "automatic" }]);
+  }
+  return <section className="panel process-builder"><span className="module-icon"><Wrench /></span><h3>Product process builder</h3><p>Create a product process plan, set its number of steps, and decide the material-fetch method for each step.</p><div className="builder-fields"><label className="field"><span>Existing finished product</span><select value={productId} onChange={(event) => { setProductId(event.target.value); setNewProduct(""); }}><option value="">Create a new product below</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label><Field label="New product name" value={newProduct} onChange={(event) => { setNewProduct(event.target.value); setProductId(""); }} placeholder="e.g. Precision gear" /><Field label="Number of processes" type="number" min="1" max="12" value={stepCount} onChange={(event) => setCount(event.target.value)} /></div><div className="process-step-editor">{steps.map((step, index) => <div className="step-editor" key={index}><strong>Process {index + 1}</strong><Field label="Process name" value={step.name} onChange={(event) => updateStep(index, { name: event.target.value })} placeholder="e.g. CNC machining" /><div className="step-mode"><button type="button" className={step.mode === "automatic" ? "selected" : ""} onClick={() => updateStep(index, { mode: "automatic" })}>Automatic fetch</button><button type="button" className={step.mode === "manual" ? "selected" : ""} onClick={() => updateStep(index, { mode: "manual" })}>Manual fetch</button></div></div>)}</div><button type="button" className="primary-button compact builder-save" onClick={save}>Save product process plan</button>{message && <p className="builder-note">{message}</p>}</section>;
+}
 
 function Stat({ label, value, icon }) { return <section className="stat"><span>{icon}</span><p>{label}</p><strong>{value}</strong></section>; }
 function RecordModule({ title, rows, empty, fields, onAdd, columns, readOnly = false }) { const [open, setOpen] = useState(false); const [form, setForm] = useState({}); const submit = (event) => { event.preventDefault(); onAdd(form); setOpen(false); setForm({}); }; return <><div className="module-heading"><div><h2>{title}</h2><p>{readOnly ? "View-only access. Contact a manager to request material changes." : "Stored securely in your Supabase workspace."}</p></div>{!readOnly && <button className="primary-button compact" onClick={() => setOpen(!open)}><Plus size={17} />Add record</button>}</div>{open && <form className="record-form panel" onSubmit={submit}>{fields.map(([key, label, type = "text"]) => <Field key={key} label={label} type={type} value={form[key] || ""} onChange={(e) => setForm({ ...form, [key]: e.target.value })} />)}<button className="primary-button compact">Save record</button></form>}<section className="panel table-panel">{rows.length ? <table><thead><tr>{columns.map((column) => <th key={column}>{column.replaceAll("_", " ")}</th>)}</tr></thead><tbody>{rows.map((row) => <tr key={row.id}>{columns.map((column) => <td key={column}>{column.includes("price") || column.includes("cost") || column.includes("total") ? money.format(row[column] || 0) : row[column] || "—"}</td>)}</tr>)}</tbody></table> : <div className="empty"><Boxes size={27} />{empty}</div>}</section></>; }
