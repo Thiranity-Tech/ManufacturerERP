@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "node backend/server.js",
-    "client": "vite --host 0.0.0.0",
-    "build": "vite build"
+    "client": "vite frontend --host 0.0.0.0",
+    "build": "vite build frontend"
   },
   "dependencies": {
     "better-sqlite3": "^12.0.0",
