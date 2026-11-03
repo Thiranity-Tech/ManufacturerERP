@@ -1,4 +1,5 @@
 :root { --erp-navy: #102a62; --erp-ink: #10203d; --erp-muted: #64748b; --erp-line: #dbe4f0; }
+.login-setup-notice { min-height: 100vh; display: grid; place-items: center; padding: 24px; color: #294574; background: #f7f9fc; font: 600 15px Inter, ui-sans-serif, system-ui, sans-serif; }
 .login-page { min-height: 100vh; display: grid; grid-template-columns: minmax(440px, 46%) 1fr; color: var(--erp-ink); background: #f7f9fc; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
 .login-showcase { position: relative; overflow: hidden; min-height: 100vh; padding: 42px clamp(42px, 5vw, 88px); display: flex; flex-direction: column; color: #fff; background: radial-gradient(circle at 74% 23%, #2758c7 0, rgba(39,88,199,.28) 18%, transparent 39%), linear-gradient(145deg, #102a62 0%, #173d8b 100%); }
 .login-grid { position: absolute; inset: 0; opacity: .13; background-image: linear-gradient(rgba(255,255,255,.22) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.22) 1px, transparent 1px); background-size: 46px 46px; mask-image: linear-gradient(150deg, black, transparent 72%); }

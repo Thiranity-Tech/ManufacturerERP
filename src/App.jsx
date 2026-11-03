@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import LoginScreen from "./LoginScreen";
+import { isSupabaseConfigured, supabase } from "./supabase";
 
 const INITIAL_PRODUCTS = [
   { id: "prod-a", name: "Product A (Transmission Spur)", vault: 5, price: 1850 },
@@ -1049,15 +1050,31 @@ function Workspace() {
 }
 
 export default function App() {
-  const [signedIn, setSignedIn] = useState(
-    () => sessionStorage.getItem("manufacturer-erp-signed-in") === "true"
-  );
+  const [session, setSession] = useState(null);
+  const [loadingSession, setLoadingSession] = useState(true);
 
-  function handleSignIn(email) {
-    sessionStorage.setItem("manufacturer-erp-signed-in", "true");
-    sessionStorage.setItem("manufacturer-erp-user-email", email);
-    setSignedIn(true);
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoadingSession(false);
+      return undefined;
+    }
+
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+      setLoadingSession(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      setLoadingSession(false);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (!isSupabaseConfigured) {
+    return <div className="login-setup-notice">Supabase is not configured. Add the VITE_SUPABASE values to .env.local.</div>;
   }
 
-  return signedIn ? <Workspace /> : <LoginScreen onSignIn={handleSignIn} />;
+  if (loadingSession) return <div className="login-setup-notice">Connecting to your secure workspace…</div>;
+  return session ? <Workspace /> : <LoginScreen onSignIn={() => setLoadingSession(false)} />;
 }

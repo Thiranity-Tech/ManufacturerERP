@@ -2,3 +2,6 @@ node_modules
 dist
 release
 database/*.db
+.env.local
+.env.*.local
+!.env.example

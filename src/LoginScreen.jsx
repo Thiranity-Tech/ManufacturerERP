@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ArrowRight, CheckCircle2, Eye, EyeOff, Factory, ShieldCheck } from "lucide-react";
+import { ensureWorkspace, supabase } from "./supabase";
 import "./login.css";
 
 const highlights = [
@@ -25,7 +26,7 @@ export default function LoginScreen({ onSignIn }) {
     setMessage("");
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     if (!email.trim() || !password || (creatingWorkspace && (!company.trim() || !name.trim()))) {
       setMessage("Complete the required fields to continue.");
@@ -35,7 +36,41 @@ export default function LoginScreen({ onSignIn }) {
       setMessage("Your passwords do not match.");
       return;
     }
-    onSignIn(email.trim());
+    setMessage("");
+
+    if (creatingWorkspace) {
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: { full_name: name.trim(), company_name: company.trim() },
+        },
+      });
+
+      if (error) {
+        setMessage(error.message);
+        return;
+      }
+
+      if (!data.session) {
+        setMessage("Check your inbox to verify your email, then sign in to create your workspace.");
+        return;
+      }
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (error) {
+        setMessage(error.message);
+        return;
+      }
+    }
+
+    try {
+      await ensureWorkspace();
+      onSignIn();
+    } catch (error) {
+      setMessage(error.message || "Your account was created, but the workspace could not be initialized.");
+    }
   }
 
   return (
