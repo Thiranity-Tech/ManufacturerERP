@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import LoginScreen from "./LoginScreen";
 
 const INITIAL_PRODUCTS = [
   { id: "prod-a", name: "Product A (Transmission Spur)", vault: 5, price: 1850 },
@@ -26,7 +27,7 @@ const VENDORS = [
   "Delta Forging Works",
 ];
 
-export default function App() {
+function Workspace() {
   // Navigation Drawer / Active Module
   const [activeTab, setActiveTab] = useState("sales"); // 'sales' | 'vendor' | 'vault'
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1045,4 +1046,18 @@ export default function App() {
       )}
     </div>
   );
+}
+
+export default function App() {
+  const [signedIn, setSignedIn] = useState(
+    () => sessionStorage.getItem("manufacturer-erp-signed-in") === "true"
+  );
+
+  function handleSignIn(email) {
+    sessionStorage.setItem("manufacturer-erp-signed-in", "true");
+    sessionStorage.setItem("manufacturer-erp-user-email", email);
+    setSignedIn(true);
+  }
+
+  return signedIn ? <Workspace /> : <LoginScreen onSignIn={handleSignIn} />;
 }
