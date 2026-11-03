@@ -10,9 +10,14 @@ export async function getWorkspace() {
   if (setupError) throw setupError;
   const { data, error } = await supabase
     .from("organization_members")
-    .select("organization_id, organizations(id, name)")
+    .select("organization_id, role, organizations(id, name)")
     .limit(1)
     .single();
   if (error) throw error;
-  return { id: data.organization_id, name: data.organizations.name };
+  return {
+    id: data.organization_id,
+    name: data.organizations.name,
+    // Workspace creators are owners in the database and Super Admins in the ERP UI.
+    role: data.role === "owner" ? "superadmin" : data.role === "member" ? "employee" : data.role,
+  };
 }
