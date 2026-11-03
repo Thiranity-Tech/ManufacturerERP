@@ -39,11 +39,10 @@ export default function LoginScreen({ onSignIn }) {
     setMessage("");
 
     if (creatingWorkspace) {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: window.location.origin,
           data: { full_name: name.trim(), company_name: company.trim() },
         },
       });
@@ -53,10 +52,6 @@ export default function LoginScreen({ onSignIn }) {
         return;
       }
 
-      if (!data.session) {
-        setMessage("Check your inbox to verify your email, then sign in to create your workspace.");
-        return;
-      }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (error) {
