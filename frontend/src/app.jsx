@@ -46,6 +46,7 @@ function AccessScreen({ onReady }) {
   const [mode, setMode] = useState("signin");
   const [form, setForm] = useState({ company: "", name: "", email: "", password: "" });
   const [error, setError] = useState("");
+  const [subscriptionBlocked, setSubscriptionBlocked] = useState(false);
   const [busy, setBusy] = useState(false);
   const create = mode === "create";
   const update = (key) => (event) => setForm({ ...form, [key]: event.target.value });
@@ -89,6 +90,8 @@ function Workspace({ session, onSignOut }) {
   async function load() {
     try {
       const current = await getWorkspace(); setWorkspace(current);
+      const expiresAt = current.accessEndsAt ? new Date(current.accessEndsAt).getTime() : 0;
+      if (!["trial", "active"].includes(current.subscriptionStatus) || (expiresAt && expiresAt <= Date.now())) { setSubscriptionBlocked(true); return; }
       const [productResult, materialResult, salesResult, orderResult, expenseResult, requestResult, dispatchResult, employeeResult] = await Promise.all([
         supabase.from("products").select("*").eq("organization_id", current.id).order("created_at", { ascending: false }),
         supabase.from("raw_materials").select("*").eq("organization_id", current.id).order("created_at", { ascending: false }),
@@ -107,6 +110,8 @@ function Workspace({ session, onSignOut }) {
     } catch (err) { setError(err.message || "Could not load workspace data."); }
   }
   useEffect(() => { load(); }, []);
+
+  if (subscriptionBlocked) return <main className="subscription-blocked"><Factory size={34} /><p className="overline">SUBSCRIPTION REQUIRED</p><h1>Your trial or subscription has ended.</h1><p>Contact Manufacturer ERP to renew access to this workspace.</p><button className="primary-button" onClick={onSignOut}>Sign out</button></main>;
 
   async function addRecord(table, values) {
     const { data, error: insertError } = await supabase.from(table).insert({ ...values, organization_id: workspace.id }).select().single();

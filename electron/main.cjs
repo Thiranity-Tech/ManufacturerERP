@@ -3,10 +3,10 @@ const path = require("path");
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 480,
-    height: 900,
-    minWidth: 380,
-    minHeight: 600,
+    width: 1360,
+    height: 860,
+    minWidth: 960,
+    minHeight: 640,
     title: "Manufacturer ERP",
     autoHideMenuBar: true,
     webPreferences: {
@@ -16,7 +16,7 @@ function createWindow() {
   });
 
   Menu.setApplicationMenu(null);
-  win.loadFile(path.join(__dirname, "..", "dist", "index.html"));
+  win.loadFile(path.join(__dirname, "..", "frontend", "dist", "index.html"));
 }
 
 app.whenReady().then(() => {
