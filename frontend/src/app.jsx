@@ -46,8 +46,6 @@ function AccessScreen({ onReady }) {
   const [mode, setMode] = useState("signin");
   const [form, setForm] = useState({ company: "", name: "", email: "", password: "" });
   const [error, setError] = useState("");
-  const [subscriptionBlocked, setSubscriptionBlocked] = useState(false);
-  const [platformAdmin, setPlatformAdmin] = useState(false);
   const [busy, setBusy] = useState(false);
   const create = mode === "create";
   const update = (key) => (event) => setForm({ ...form, [key]: event.target.value });
@@ -87,6 +85,9 @@ function Workspace({ session, onSignOut }) {
   const [dispatches, setDispatches] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [error, setError] = useState("");
+  const [subscriptionBlocked, setSubscriptionBlocked] = useState(false);
+  const [platformAdmin, setPlatformAdmin] = useState(false);
+  const [workspaceLoading, setWorkspaceLoading] = useState(true);
 
   async function load() {
     try {
@@ -111,10 +112,13 @@ function Workspace({ session, onSignOut }) {
       setMaterialRequests(requestResult.data); setDispatches(dispatchResult.data);
       setEmployees(employeeResult.data);
     } catch (err) { setError(err.message || "Could not load workspace data."); }
+    finally { setWorkspaceLoading(false); }
   }
   useEffect(() => { load(); }, []);
 
   if (subscriptionBlocked) return <SubscriptionEnded workspace={workspace} onSignOut={onSignOut} />;
+  if (workspaceLoading) return <Notice text="Loading your workspace…" />;
+  if (!workspace) return <main className="subscription-blocked"><Factory size={34} /><p className="overline">WORKSPACE SETUP NEEDED</p><h1>We couldn’t load this workspace.</h1><p>{error || "Run the latest Supabase SQL migration, then try again."}</p><button className="primary-button" onClick={onSignOut}>Sign out</button></main>;
 
   async function addRecord(table, values) {
     const { data, error: insertError } = await supabase.from(table).insert({ ...values, organization_id: workspace.id }).select().single();
