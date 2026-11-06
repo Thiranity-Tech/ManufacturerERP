@@ -26,4 +26,27 @@ set status = 'suspended', updated_at = now()
 where organization_id = 'ORG_UUID';
 ```
 
+## Customer renewal and usage records
+
+Set the support details for the customer workspace so the expired EXE displays a direct renewal contact button:
+
+```sql
+update public.organization_subscriptions
+set support_email = 'you@yourcompany.com', support_phone = '+91XXXXXXXXXX'
+where organization_id = 'ORG_UUID';
+```
+
+The `organization_access_events` table logs the signed-in user, company, time, and whether access was active or blocked whenever the web app or EXE opens. Use this in SQL Editor:
+
+```sql
+select e.occurred_at, o.name as company, u.email as user_email,
+       e.event_type, e.subscription_status
+from public.organization_access_events e
+join public.organizations o on o.id = e.organization_id
+join auth.users u on u.id = e.user_id
+order by e.occurred_at desc;
+```
+
+No subscription action deletes customer data. Suspending or expiry only blocks database access through Row Level Security. Renewing the same organization restores its original data.
+
 The customer needs an internet connection for Supabase authentication and data access.

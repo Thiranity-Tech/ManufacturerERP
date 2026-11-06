@@ -19,5 +19,7 @@ export async function getWorkspace() {
     role: workspace.role === "owner" ? "superadmin" : workspace.role === "member" ? "employee" : workspace.role,
     subscriptionStatus: workspace.subscription_status,
     accessEndsAt: workspace.access_ends_at,
+    supportEmail: workspace.support_email,
+    supportPhone: workspace.support_phone,
   };
 }
