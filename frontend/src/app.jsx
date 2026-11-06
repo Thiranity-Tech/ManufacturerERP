@@ -116,6 +116,8 @@ function Workspace({ session, onSignOut }) {
   }
   useEffect(() => { load(); }, []);
 
+  const stats = useMemo(() => ({ stock: products.reduce((n, row) => n + Number(row.stock), 0), materials: materials.reduce((n, row) => n + Number(row.stock), 0), sales: sales.reduce((n, row) => n + Number(row.grand_total), 0), expenses: expenses.reduce((n, row) => n + Number(row.amount), 0) }), [products, materials, sales, expenses]);
+
   if (subscriptionBlocked) return <SubscriptionEnded workspace={workspace} onSignOut={onSignOut} />;
   if (workspaceLoading) return <Notice text="Loading your workspace…" />;
   if (!workspace) return <main className="subscription-blocked"><Factory size={34} /><p className="overline">WORKSPACE SETUP NEEDED</p><h1>We couldn’t load this workspace.</h1><p>{error || "Run the latest Supabase SQL migration, then try again."}</p><button className="primary-button" onClick={onSignOut}>Sign out</button></main>;
@@ -126,7 +128,6 @@ function Workspace({ session, onSignOut }) {
     await load();
     return data;
   }
-  const stats = useMemo(() => ({ stock: products.reduce((n, row) => n + Number(row.stock), 0), materials: materials.reduce((n, row) => n + Number(row.stock), 0), sales: sales.reduce((n, row) => n + Number(row.grand_total), 0), expenses: expenses.reduce((n, row) => n + Number(row.amount), 0) }), [products, materials, sales, expenses]);
   const role = workspace?.role || "employee";
   const visibleNavigation = [...navigation.filter((item) => item.roles.includes(role)), ...(platformAdmin ? [{ id: "platform-admin", label: "Platform admin", icon: Settings, compact: true }] : [])];
   const title = active === "platform-admin" ? "Platform administrator" : navigation.find((item) => item.id === active)?.label || "Dashboard";
