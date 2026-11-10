@@ -19,7 +19,7 @@ const navigation = [
   { id: "expenses", label: "Expenses", icon: ReceiptIndianRupee, roles: ["superadmin", "admin", "manager"] },
   { id: "financial", label: "Financial data", icon: CircleDollarSign, roles: ["superadmin", "admin"] },
   { id: "people", label: "People & attendance", icon: UserRoundCheck, roles: ["superadmin", "admin"] },
-  { id: "process-builder", label: "Process builder", icon: Wrench, roles: ["superadmin"], compact: true },
+  { id: "process-builder", label: "Process builder", icon: Wrench, roles: ["superadmin"] },
 ];
 
 const money = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
@@ -129,11 +129,11 @@ function Workspace({ session, onSignOut }) {
     return data;
   }
   const role = workspace?.role || "employee";
-  const visibleNavigation = [...navigation.filter((item) => item.roles.includes(role)), ...(platformAdmin ? [{ id: "platform-admin", label: "Platform admin", icon: Settings, compact: true }] : [])];
+  const visibleNavigation = [...navigation.filter((item) => item.roles.includes(role)), ...(platformAdmin ? [{ id: "platform-admin", label: "Platform admin", icon: Settings, platform: true }] : [])];
   const title = active === "platform-admin" ? "Platform administrator" : navigation.find((item) => item.id === active)?.label || "Dashboard";
 
   const run = async (action) => { try { setError(""); await action(); await load(); } catch (err) { setError(err.message || "Operation failed."); } };
-  return <div className="erp-shell"><aside className="erp-sidebar"><div className="brand"><Factory /> MANUFACTURER <b>ERP</b></div><p className="workspace-label">{workspace?.name || "Loading workspace"} · {role}</p><nav>{visibleNavigation.map(({ id, label, icon: Icon, compact }) => <button key={id} className={`${active === id ? "nav-active" : ""} ${compact ? "nav-compact" : ""}`} onClick={() => setActive(id)} title={compact ? "Platform administrator" : label}><Icon size={18} />{label}{compact && <small>PLATFORM ADMIN</small>}</button>)}</nav><SupportContact workspace={workspace} /><button className="logout" onClick={onSignOut}><LogOut size={17} />Sign out</button></aside><main className="erp-content"><header><div><p className="overline">OPERATIONS CENTER</p><h1>{title}</h1></div><span className="user-pill">{session.user.email}</span></header>{error && <p className="app-error">{error}</p>}<Module active={active} role={role} platformAdmin={platformAdmin} stats={stats} products={products} materials={materials} sales={sales} purchaseOrders={purchaseOrders} expenses={expenses} materialRequests={materialRequests} dispatches={dispatches} employees={employees} addRecord={addRecord} run={run} /></main></div>;
+  return <div className="erp-shell"><aside className="erp-sidebar"><div className="brand"><Factory /> MANUFACTURER <b>ERP</b></div><p className="workspace-label">{workspace?.name || "Loading workspace"} · {role}</p><nav>{visibleNavigation.map(({ id, label, icon: Icon, platform }) => <button key={id} className={`${active === id ? "nav-active" : ""} ${platform ? "nav-platform" : ""}`} onClick={() => setActive(id)} title={label}><Icon size={18} />{label}{platform && <small>PLATFORM ADMIN</small>}</button>)}</nav><SupportContact workspace={workspace} /><button className="logout" onClick={onSignOut}><LogOut size={17} />Sign out</button></aside><main className="erp-content"><header><div><p className="overline">OPERATIONS CENTER</p><h1>{title}</h1></div><span className="user-pill">{session.user.email}</span></header>{error && <p className="app-error">{error}</p>}<Module active={active} role={role} platformAdmin={platformAdmin} stats={stats} products={products} materials={materials} sales={sales} purchaseOrders={purchaseOrders} expenses={expenses} materialRequests={materialRequests} dispatches={dispatches} employees={employees} addRecord={addRecord} run={run} /></main></div>;
 }
 
 function Module({ active, role, platformAdmin, stats, products, materials, sales, purchaseOrders, expenses, materialRequests, dispatches, employees, addRecord, run }) {
