@@ -96,7 +96,7 @@ function Workspace({ session, onSignOut }) {
       const { data: isPlatformAdmin } = await supabase.rpc("is_platform_administrator");
       setPlatformAdmin(Boolean(isPlatformAdmin));
       const expiresAt = current.accessEndsAt ? new Date(current.accessEndsAt).getTime() : 0;
-      if (!["trial", "active"].includes(current.subscriptionStatus) || (expiresAt && expiresAt <= Date.now())) { setSubscriptionBlocked(true); return; }
+      if (!isPlatformAdmin && (!["trial", "active"].includes(current.subscriptionStatus) || (expiresAt && expiresAt <= Date.now()))) { setSubscriptionBlocked(true); return; }
       const [productResult, materialResult, salesResult, orderResult, expenseResult, requestResult, dispatchResult, employeeResult] = await Promise.all([
         supabase.from("products").select("*").eq("organization_id", current.id).order("created_at", { ascending: false }),
         supabase.from("raw_materials").select("*").eq("organization_id", current.id).order("created_at", { ascending: false }),
