@@ -6,7 +6,7 @@
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "node backend/server.js",
     "client": "vite frontend --host 0.0.0.0",
-    "build": "vite build frontend",
+    "build": "vite build frontend --config vite.config.js",
     "start": "npm run build && electron .",
     "dist": "npm run build && electron-builder --win --x64",
     "android:sync": "npm run build && npx cap sync android",
@@ -47,6 +47,7 @@
       "package.json"
     ],
     "win": {
+      "signAndEditExecutable": false,
       "target": [
         "nsis",
         "portable"
