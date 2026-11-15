@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight, Boxes, BriefcaseBusiness, CircleDollarSign, ClipboardList, Factory,
   CalendarCheck, Eye, EyeOff, FileBarChart, LayoutDashboard, LogOut, PackageCheck, Plus, ReceiptIndianRupee,
-  Settings, ShoppingCart, UserRoundCheck, Users, Warehouse, Workflow, Wrench,
+  Menu, Settings, ShoppingCart, UserRoundCheck, Users, Warehouse, Workflow, Wrench, X,
 } from "lucide-react";
 import { getWorkspace, supabase } from "./supabase";
 import "./app.css";
@@ -96,6 +96,7 @@ function Workspace({ session, onSignOut }) {
   const [subscriptionBlocked, setSubscriptionBlocked] = useState(false);
   const [platformAdmin, setPlatformAdmin] = useState(false);
   const [workspaceLoading, setWorkspaceLoading] = useState(true);
+  const [navigationOpen, setNavigationOpen] = useState(false);
 
   async function load() {
     try {
@@ -149,7 +150,7 @@ function Workspace({ session, onSignOut }) {
   const title = active === "platform-admin" ? "Platform administrator" : navigation.find((item) => item.id === active)?.label || "Dashboard";
 
   const run = async (action) => { try { setError(""); await action(); await load(); } catch (err) { setError(err.message || "Operation failed."); } };
-  return <div className="erp-shell"><aside className="erp-sidebar"><div className="brand"><Factory /> MANUFACTURER <b>ERP</b></div><p className="workspace-label">{workspace?.name || "Loading workspace"} · {role}</p><nav>{visibleNavigation.map(({ id, label, icon: Icon, platform }) => <button key={id} className={`${active === id ? "nav-active" : ""} ${platform ? "nav-platform" : ""}`} onClick={() => setActive(id)} title={label}><Icon size={18} />{label}{platform && <small>PLATFORM ADMIN</small>}</button>)}</nav><SupportContact workspace={workspace} /><button className="logout" onClick={onSignOut}><LogOut size={17} />Sign out</button></aside><main className="erp-content"><header><div><p className="overline">OPERATIONS CENTER</p><h1>{title}</h1></div><span className="user-pill">{session.user.email}</span></header>{error && <p className="app-error">{error}</p>}<Module active={active} role={role} platformAdmin={platformAdmin} stats={stats} products={products} materials={materials} sales={sales} purchaseOrders={purchaseOrders} expenses={expenses} materialRequests={materialRequests} dispatches={dispatches} employees={employees} processDefinitions={processDefinitions} attendance={attendance} jobs={jobs} bomItems={bomItems} currentEmployee={currentEmployee} addRecord={addRecord} run={run} /></main></div>;
+  return <div className="erp-shell">{navigationOpen && <button className="sidebar-backdrop" aria-label="Close navigation" onClick={() => setNavigationOpen(false)} />}<aside className={`erp-sidebar ${navigationOpen ? "sidebar-open" : ""}`}><div className="brand"><Factory /> MANUFACTURER <b>ERP</b><button className="sidebar-close" aria-label="Close navigation" onClick={() => setNavigationOpen(false)}><X size={20} /></button></div><p className="workspace-label">{workspace?.name || "Loading workspace"} · {role}</p><nav>{visibleNavigation.map(({ id, label, icon: Icon, platform }) => <button key={id} className={`${active === id ? "nav-active" : ""} ${platform ? "nav-platform" : ""}`} onClick={() => { setActive(id); setNavigationOpen(false); }} title={label}><Icon size={18} />{label}{platform && <small>PLATFORM ADMIN</small>}</button>)}</nav><SupportContact workspace={workspace} /><button className="logout" onClick={onSignOut}><LogOut size={17} />Sign out</button></aside><main className="erp-content"><header><div className="page-heading"><button className="mobile-menu" aria-label="Open navigation" onClick={() => setNavigationOpen(true)}><Menu size={22} /></button><div><p className="overline">OPERATIONS CENTER</p><h1>{title}</h1></div></div><span className="user-pill">{session.user.email}</span></header>{error && <p className="app-error">{error}</p>}<Module active={active} role={role} platformAdmin={platformAdmin} stats={stats} products={products} materials={materials} sales={sales} purchaseOrders={purchaseOrders} expenses={expenses} materialRequests={materialRequests} dispatches={dispatches} employees={employees} processDefinitions={processDefinitions} attendance={attendance} jobs={jobs} bomItems={bomItems} currentEmployee={currentEmployee} addRecord={addRecord} run={run} /></main></div>;
 }
 
 function Module({ active, role, platformAdmin, stats, products, materials, sales, purchaseOrders, expenses, materialRequests, dispatches, employees, processDefinitions, attendance, jobs, bomItems, currentEmployee, addRecord, run }) {

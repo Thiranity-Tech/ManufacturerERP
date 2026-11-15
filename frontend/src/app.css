@@ -92,3 +92,64 @@
   .stat-grid { grid-template-columns: 1fr; }
   .auth-tabs button { font-size: 11px; }
 }
+
+/* Signed-in ERP mobile layout.  The access/login page intentionally has no
+   selectors here, so its approved design remains unchanged. */
+.mobile-menu,.sidebar-close,.sidebar-backdrop { display: none; }
+.page-heading { display: contents; }
+
+@media (max-width: 760px) {
+  .erp-shell { display: block; }
+  .erp-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 30;
+    width: min(82vw, 310px);
+    min-height: 100dvh;
+    padding: calc(20px + env(safe-area-inset-top)) 15px max(20px, env(safe-area-inset-bottom));
+    overflow-y: auto;
+    flex-direction: column;
+    transform: translateX(-105%);
+    transition: transform .22s ease;
+    box-shadow: 18px 0 42px #07173555;
+  }
+  .erp-sidebar.sidebar-open { transform: translateX(0); }
+  .sidebar-backdrop { position: fixed; inset: 0; z-index: 29; display: block; width: 100%; border: 0; background: #07173575; }
+  .erp-sidebar .brand { display: flex; padding: 0 7px; }
+  .erp-sidebar .brand svg { width: 36px; height: 36px; }
+  .sidebar-close { display: grid; place-items: center; width: 38px; height: 38px; margin-left: auto; border: 0; border-radius: 9px; color: #dce8ff; background: #294a91; }
+  .workspace-label { display: block; margin: 26px 10px 14px; font-size: 11px; }
+  .erp-sidebar nav { display: grid; overflow: visible; flex: initial; gap: 5px; }
+  .erp-sidebar nav button { display: flex; width: 100%; height: auto; min-height: 45px; flex: initial; justify-content: flex-start; padding: 11px 13px; font-size: 14px; }
+  .erp-sidebar nav button svg { width: 18px; height: 18px; }
+  .nav-platform small { display: inline; }
+  .sidebar-support { display: grid; margin: 18px 8px 10px; padding: 12px; border: 1px solid #4868a8; }
+  .sidebar-support span,.sidebar-support a { font-size: 11px; }
+  .sidebar-support a::before { display: none; }
+  .logout { width: 100%; min-height: 45px; margin-top: 12px; padding: 11px 13px; font-size: 14px; }
+  .erp-content { min-height: 100dvh; padding: max(18px, env(safe-area-inset-top)) 16px max(28px, env(safe-area-inset-bottom)); }
+  .erp-content header { align-items: center; margin-bottom: 24px; }
+  .page-heading { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .mobile-menu { display: grid; flex: 0 0 auto; place-items: center; width: 43px; height: 43px; border: 0; border-radius: 11px; color: #fff; background: #174598; box-shadow: 0 8px 18px #1f54af32; }
+  .erp-content h1 { font-size: clamp(25px, 7vw, 31px); }
+  .user-pill { display: block; max-width: 116px; padding: 7px 9px; font-size: 10px; }
+  .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .record-form,.builder-fields,.admin-controls { grid-template-columns: 1fr; }
+  .record-form .compact,.admin-controls .primary-button,.admin-controls .danger-button { width: 100%; }
+  .module-heading { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .module-heading .compact { width: 100%; }
+  .attendance-action { display: grid; grid-template-columns: 1fr; }
+  .attendance-action .compact { width: 100%; }
+  .process-builder { overflow: hidden; }
+  .process-step-editor { gap: 10px; }
+  .step-editor { padding: 13px; }
+  .table-panel { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+
+@media (max-width: 390px) {
+  .erp-content { padding-left: 12px; padding-right: 12px; }
+  .user-pill { display: none; }
+  .stat-grid { grid-template-columns: 1fr; }
+  .mobile-menu { width: 40px; height: 40px; }
+  .erp-content h1 { font-size: 25px; }
+}
