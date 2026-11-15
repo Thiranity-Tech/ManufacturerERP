@@ -76,3 +76,19 @@
 .admin-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 14px; }.admin-controls .field { margin-top: 0; }.admin-controls .primary-button,.admin-controls .danger-button { align-self: end; min-height: 43px; margin: 15px 0 0; }.danger-button { min-height: 43px; padding: 0 15px; border: 1px solid #efb5b1; border-radius: 9px; color: #b42318; background: #fff4f3; font: 700 13px inherit; cursor: pointer; }
 @media (max-width: 760px) { .admin-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }.admin-controls .field { margin-top: 15px; } }
 @media (max-width: 480px) { .admin-controls { grid-template-columns: 1fr; }.admin-controls .primary-button,.admin-controls .danger-button { width: 100%; } }
+
+/* Native Android touch refinements */
+@media (hover: none) and (pointer: coarse) {
+  input, select, button { font-size: 16px !important; }
+  .erp-sidebar { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+  .erp-sidebar nav button, .logout { min-height: 46px; }
+  .row-action { min-height: 42px; padding: 0 14px; }
+  .primary-button { min-height: 50px; }
+  .table-panel { -webkit-overflow-scrolling: touch; }
+}
+
+@media (max-width: 380px) {
+  .erp-content { padding-left: 12px; padding-right: 12px; }
+  .stat-grid { grid-template-columns: 1fr; }
+  .auth-tabs button { font-size: 11px; }
+}
