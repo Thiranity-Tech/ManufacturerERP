@@ -4,6 +4,7 @@
 .employee-activation-link { display: block; width: 100%; margin: 16px 0 0; border: 0; color: #285bbb; background: transparent; font: 700 13px inherit; text-align: center; cursor: pointer; }.employee-activation-link:hover { text-decoration: underline; }
 /* Employee accounts are created by the workspace owner; employees use normal Sign in. */
 .employee-activation-link { display: none; }
+.field-invalid input,.field-invalid select { border-color: #dc3c35 !important; box-shadow: 0 0 0 3px #dc3c3517; }.field-error { color: #c72d27; font-size: 11px; font-weight: 700; line-height: 1.35; }
 .access-pagination { display: flex; justify-content: center; gap: 9px; margin-top: 18px; }
 .module-heading h2 { display: none; }
 .section-title { margin: 0; color: #1a3157; font: 800 18px Manrope, sans-serif; }
