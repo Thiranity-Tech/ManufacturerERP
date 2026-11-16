@@ -2,6 +2,8 @@
 
 .password-input { position: relative; display: block; }.password-input input { width: 100%; padding-right: 48px; }.password-input button { position: absolute; top: 50%; right: 5px; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; transform: translateY(-50%); border: 0; border-radius: 8px; color: #587094; background: transparent; cursor: pointer; }.password-input button:hover { color: #1f57bd; background: #edf3ff; }
 .employee-activation-link { display: block; width: 100%; margin: 16px 0 0; border: 0; color: #285bbb; background: transparent; font: 700 13px inherit; text-align: center; cursor: pointer; }.employee-activation-link:hover { text-decoration: underline; }
+/* Employee accounts are created by the workspace owner; employees use normal Sign in. */
+.employee-activation-link { display: none; }
 .access-pagination { display: flex; justify-content: center; gap: 9px; margin-top: 18px; }
 .module-heading h2 { display: none; }
 .section-title { margin: 0; color: #1a3157; font: 800 18px Manrope, sans-serif; }
