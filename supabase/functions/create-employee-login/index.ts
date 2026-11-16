@@ -48,17 +48,27 @@ Deno.serve(async (request) => {
       email_confirm: true,
       user_metadata: { full_name: fullName },
     });
-    if (createError || !created.user) throw new Error(createError?.message ?? "Could not create the employee login.");
+    let employeeUserId = created.user?.id;
+    if (createError || !employeeUserId) {
+      // A previous attempt may already have created the Auth account but failed
+      // while adding the ERP employee record. Reuse that account safely.
+      const { data: users, error: usersError } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      const existingUser = users?.users.find((candidate) => candidate.email?.toLowerCase() === email);
+      if (usersError || !existingUser) throw new Error(createError?.message ?? "Could not create the employee login.");
+      employeeUserId = existingUser.id;
+      const { error: passwordError } = await adminClient.auth.admin.updateUserById(employeeUserId, { password, email_confirm: true, user_metadata: { full_name: fullName } });
+      if (passwordError) throw new Error(passwordError.message);
+    }
 
     const memberRole = role === "admin" ? "admin" : role === "manager" ? "manager" : "member";
-    const { error: membershipInsertError } = await adminClient.from("organization_members").insert({
+    const { error: membershipInsertError } = await adminClient.from("organization_members").upsert({
       organization_id: membership.organization_id,
-      user_id: created.user.id,
+      user_id: employeeUserId,
       role: memberRole,
-    });
+    }, { onConflict: "organization_id,user_id", ignoreDuplicates: true });
     if (membershipInsertError) throw new Error(membershipInsertError.message);
 
-    const { error: employeeError } = await adminClient.from("employees").insert({
+    const { error: employeeError } = await adminClient.from("employees").upsert({
       organization_id: membership.organization_id,
       full_name: fullName,
       email,
@@ -66,7 +76,7 @@ Deno.serve(async (request) => {
       role,
       assigned_process_id: assignedProcessId,
       login_status: "active",
-    });
+    }, { onConflict: "organization_id,email" });
     if (employeeError) throw new Error(employeeError.message);
 
     return Response.json({ success: true }, { headers: { ...corsHeaders, "Content-Type": "application/json" } });
