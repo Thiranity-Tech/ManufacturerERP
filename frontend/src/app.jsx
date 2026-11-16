@@ -47,7 +47,6 @@ function Notice({ text }) { return <div className="center-notice">{text}</div>; 
 
 function AccessScreen({ onReady }) {
   const [mode, setMode] = useState("signin");
-  const [employeeActivation, setEmployeeActivation] = useState(false);
   const [form, setForm] = useState({ company: "", name: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -57,11 +56,7 @@ function AccessScreen({ onReady }) {
   async function submit(event) {
     event.preventDefault(); setError(""); setBusy(true);
     try {
-      if (employeeActivation) {
-        const { error: authError } = await supabase.auth.signUp({ email: form.email, password: form.password, options: { data: { employee_activation: true } } });
-        if (authError) throw authError;
-        await getWorkspace();
-      } else if (create) {
+      if (create) {
         if (!form.company || !form.name) throw new Error("Enter your company and name.");
         const { error: authError } = await supabase.auth.signUp({ email: form.email, password: form.password, options: { data: { company_name: form.company, full_name: form.name } } });
         if (authError) throw authError;
@@ -69,14 +64,13 @@ function AccessScreen({ onReady }) {
       } else {
         const { error: authError } = await supabase.auth.signInWithPassword({ email: form.email, password: form.password });
         if (authError) throw authError;
-        await getWorkspace();
       }
       onReady();
     } catch (err) { setError(err.message || "Unable to continue."); }
     finally { setBusy(false); }
   }
 
-  return <main className="access-page"><section className="access-hero"><div className="brand"><Factory /> MANUFACTURER <b>ERP</b></div><div><p className="overline">CONNECTED OPERATIONS</p><h1>Make every<br />operation <em>count.</em></h1><p>One workspace for production, materials, purchasing, and delivery.</p></div><div className="hero-points"><span>✓ One source of operational truth</span><span>✓ Secure company workspaces</span><span>✓ Built for growing manufacturers</span></div></section><section className="access-form"><div className="form-card"><div className="auth-tabs"><button className={!create && !employeeActivation ? "selected" : ""} onClick={() => { setMode("signin"); setEmployeeActivation(false); }}>Sign in</button><button className={create && !employeeActivation ? "selected" : ""} onClick={() => { setMode("create"); setEmployeeActivation(false); }}>Create workspace</button></div><p className="overline">{employeeActivation ? "EMPLOYEE ACCESS" : create ? "START FOR FREE" : "SECURE ACCESS"}</p><h2>{employeeActivation ? "Activate employee login" : create ? "Set up your company" : "Welcome back"}</h2><p className="subtext">{employeeActivation ? "Use the same work email that your administrator added in People & attendance." : create ? "Create a private home for your operations." : "Sign in to your manufacturing workspace."}</p><form onSubmit={submit}>{create && !employeeActivation && <><Field label="Company name" value={form.company} onChange={update("company")} placeholder="Your company name" /><Field label="Your full name" value={form.name} onChange={update("name")} placeholder="Your name" /></>}<Field label="Work email" type="email" value={form.email} onChange={update("email")} placeholder="name@company.com" /><PasswordField value={form.password} onChange={update("password")} placeholder={employeeActivation || create ? "Create a password" : "Enter your password"} />{error && <p className="form-error">{error}</p>}<button className="primary-button" disabled={busy}>{busy ? "Please wait…" : employeeActivation ? "Activate employee login" : create ? "Create workspace" : "Sign in"}<ArrowRight size={17} /></button></form><button type="button" className="employee-activation-link" onClick={() => { setMode("signin"); setEmployeeActivation(!employeeActivation); setError(""); }}>{employeeActivation ? "Back to sign in" : "Employee already added? Activate your login"}</button></div></section></main>;
+  return <main className="access-page"><section className="access-hero"><div className="brand"><Factory /> MANUFACTURER <b>ERP</b></div><div><p className="overline">CONNECTED OPERATIONS</p><h1>Make every<br />operation <em>count.</em></h1><p>One workspace for production, materials, purchasing, and delivery.</p></div><div className="hero-points"><span>✓ One source of operational truth</span><span>✓ Secure company workspaces</span><span>✓ Built for growing manufacturers</span></div></section><section className="access-form"><div className="form-card"><div className="auth-tabs"><button className={!create ? "selected" : ""} onClick={() => setMode("signin")}>Sign in</button><button className={create ? "selected" : ""} onClick={() => setMode("create")}>Create workspace</button></div><p className="overline">{create ? "START FOR FREE" : "SECURE ACCESS"}</p><h2>{create ? "Set up your company" : "Welcome back"}</h2><p className="subtext">{create ? "Create a private home for your operations." : "Sign in to your manufacturing workspace."}</p><form onSubmit={submit}>{create && <><Field label="Company name" value={form.company} onChange={update("company")} placeholder="Your company name" /><Field label="Your full name" value={form.name} onChange={update("name")} placeholder="Your name" /></>}<Field label="Work email" type="email" value={form.email} onChange={update("email")} placeholder="name@company.com" /><PasswordField value={form.password} onChange={update("password")} placeholder={create ? "Create a password" : "Enter your password"} />{error && <p className="form-error">{error}</p>}<button className="primary-button" disabled={busy}>{busy ? "Please wait…" : create ? "Create workspace" : "Sign in"}<ArrowRight size={17} /></button></form></div></section></main>;
 }
 
 function Field({ label, type = "text", ...props }) { if (type === "unit") return <label className="field"><span>{label}</span><select required {...props}><option value="">Select unit</option>{["Centimeter", "Meter", "Kilogram", "Gram", "Tons", "Litre", "ML"].map((unit) => <option key={unit} value={unit}>{unit}</option>)}</select></label>; if (type === "department") return <label className="field"><span>{label}</span><select required {...props}><option value="">Select department</option>{["Manufacturing", "Marketing", "HR", "Purchase", "Accounts", "Administration"].map((department) => <option key={department}>{department}</option>)}</select></label>; return <label className="field"><span>{label}</span><input required type={type} {...props} /></label>; }
