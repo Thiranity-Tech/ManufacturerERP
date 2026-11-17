@@ -1,6 +1,35 @@
 -- Run once in Supabase SQL Editor after the existing ERP SQL files.
 -- Saves a product's process plan atomically, preventing duplicate process rows.
 
+-- Repair duplicate process rows already created before this fix. Employee
+-- assignments are moved to the retained record before duplicate rows go away.
+with ranked_processes as (
+  select id, organization_id, product_id, name,
+         first_value(id) over (
+           partition by organization_id, product_id, lower(name)
+           order by created_at, id
+         ) as kept_id,
+         row_number() over (
+           partition by organization_id, product_id, lower(name)
+           order by created_at, id
+         ) as row_number
+  from public.process_definitions
+), reassigned_employees as (
+  update public.employees employee
+  set assigned_process_id = ranked.kept_id
+  from ranked_processes ranked
+  where employee.assigned_process_id = ranked.id
+    and ranked.row_number > 1
+  returning employee.id
+)
+delete from public.process_definitions process
+using ranked_processes ranked
+where process.id = ranked.id
+  and ranked.row_number > 1;
+
+create unique index if not exists process_definitions_unique_plan_step
+  on public.process_definitions (organization_id, product_id, lower(name));
+
 create or replace function public.replace_product_process_plan(
   target_product_id uuid,
   process_names text[],

@@ -1,8 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowRight, Boxes, BriefcaseBusiness, CircleDollarSign, ClipboardList, Factory,
-  CalendarCheck, Eye, EyeOff, FileBarChart, LayoutDashboard, LogOut, PackageCheck, Plus, ReceiptIndianRupee,
-  Menu, Settings, ShoppingCart, UserRoundCheck, Users, Warehouse, Workflow, Wrench, X,
+  ArrowRight,
+  Boxes,
+  BriefcaseBusiness,
+  CircleDollarSign,
+  ClipboardList,
+  Factory,
+  CalendarCheck,
+  Eye,
+  EyeOff,
+  FileBarChart,
+  LayoutDashboard,
+  LogOut,
+  PackageCheck,
+  Plus,
+  ReceiptIndianRupee,
+  Menu,
+  Settings,
+  ShoppingCart,
+  UserRoundCheck,
+  Users,
+  Warehouse,
+  Workflow,
+  Wrench,
+  X,
 } from "lucide-react";
 import { getWorkspace, supabase } from "./supabase";
 import "./app.css";
@@ -10,71 +31,336 @@ import "./app.css";
 const allRoles = ["superadmin", "admin", "manager", "employee"];
 const operationsRoles = ["superadmin", "admin", "manager"];
 const navigation = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, roles: allRoles },
-  { id: "purchase-orders", label: "Purchase orders", icon: ClipboardList, roles: ["superadmin", "admin", "manager"] },
-  { id: "jobs", label: "Jobs & BOM", icon: FileBarChart, roles: operationsRoles },
-  { id: "inventory", label: "Inventory", icon: Warehouse, roles: operationsRoles },
-  { id: "procurement", label: "Material procurement", icon: ShoppingCart, roles: allRoles },
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    roles: allRoles,
+  },
+  {
+    id: "purchase-orders",
+    label: "Purchase orders",
+    icon: ClipboardList,
+    roles: ["superadmin", "admin", "manager"],
+  },
+  {
+    id: "jobs",
+    label: "Jobs & BOM",
+    icon: FileBarChart,
+    roles: operationsRoles,
+  },
+  {
+    id: "inventory",
+    label: "Inventory",
+    icon: Warehouse,
+    roles: operationsRoles,
+  },
+  {
+    id: "procurement",
+    label: "Material procurement",
+    icon: ShoppingCart,
+    roles: allRoles,
+  },
   { id: "process", label: "Process", icon: Workflow, roles: allRoles },
-  { id: "dispatch", label: "Dispatch", icon: PackageCheck, roles: operationsRoles },
-  { id: "sales", label: "Sales & customers", icon: BriefcaseBusiness, roles: ["superadmin", "admin", "manager"] },
-  { id: "expenses", label: "Expenses", icon: ReceiptIndianRupee, roles: ["superadmin", "admin", "manager"] },
-  { id: "financial", label: "Financial data", icon: CircleDollarSign, roles: ["superadmin", "admin"] },
-  { id: "people", label: "People & attendance", icon: UserRoundCheck, roles: ["superadmin", "admin"] },
-  { id: "attendance", label: "Attendance", icon: CalendarCheck, roles: allRoles },
-  { id: "process-builder", label: "Process builder", icon: Wrench, roles: ["superadmin"] },
+  {
+    id: "dispatch",
+    label: "Dispatch",
+    icon: PackageCheck,
+    roles: operationsRoles,
+  },
+  {
+    id: "sales",
+    label: "Sales & customers",
+    icon: BriefcaseBusiness,
+    roles: ["superadmin", "admin", "manager"],
+  },
+  {
+    id: "expenses",
+    label: "Expenses",
+    icon: ReceiptIndianRupee,
+    roles: ["superadmin", "admin", "manager"],
+  },
+  {
+    id: "financial",
+    label: "Financial data",
+    icon: CircleDollarSign,
+    roles: ["superadmin", "admin"],
+  },
+  {
+    id: "people",
+    label: "People & attendance",
+    icon: UserRoundCheck,
+    roles: ["superadmin", "admin"],
+  },
+  {
+    id: "attendance",
+    label: "Attendance",
+    icon: CalendarCheck,
+    roles: allRoles,
+  },
+  {
+    id: "process-builder",
+    label: "Process builder",
+    icon: Wrench,
+    roles: ["superadmin"],
+  },
 ];
 
-const money = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
+const money = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 0,
+});
 
 export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!supabase) { setLoading(false); return undefined; }
-    supabase.auth.getSession().then(({ data }) => { setSession(data.session); setLoading(false); });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, next) => { setSession(next); setLoading(false); });
+    if (!supabase) {
+      setLoading(false);
+      return undefined;
+    }
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setLoading(false);
+    });
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, next) => {
+      setSession(next);
+      setLoading(false);
+    });
     return () => subscription.unsubscribe();
   }, []);
 
-  if (!supabase) return <Notice text="Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in Vercel." />;
+  if (!supabase)
+    return (
+      <Notice text="Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in Vercel." />
+    );
   if (loading) return <Notice text="Connecting to your workspace…" />;
-  return session ? <Workspace session={session} onSignOut={() => supabase.auth.signOut()} /> : <AccessScreen onReady={() => setLoading(false)} />;
+  return session ? (
+    <Workspace session={session} onSignOut={() => supabase.auth.signOut()} />
+  ) : (
+    <AccessScreen onReady={() => setLoading(false)} />
+  );
 }
 
-function Notice({ text }) { return <div className="center-notice">{text}</div>; }
+function Notice({ text }) {
+  return <div className="center-notice">{text}</div>;
+}
 
 function AccessScreen({ onReady }) {
   const [mode, setMode] = useState("signin");
-  const [form, setForm] = useState({ company: "", name: "", email: "", password: "" });
+  const [form, setForm] = useState({
+    company: "",
+    name: "",
+    email: "",
+    password: "",
+  });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const create = mode === "create";
-  const update = (key) => (event) => setForm({ ...form, [key]: event.target.value });
+  const update = (key) => (event) =>
+    setForm({ ...form, [key]: event.target.value });
 
   async function submit(event) {
-    event.preventDefault(); setError(""); setBusy(true);
+    event.preventDefault();
+    setError("");
+    setBusy(true);
     try {
       if (create) {
-        if (!form.company || !form.name) throw new Error("Enter your company and name.");
-        const { error: authError } = await supabase.auth.signUp({ email: form.email, password: form.password, options: { data: { company_name: form.company, full_name: form.name } } });
+        if (!form.company || !form.name)
+          throw new Error("Enter your company and name.");
+        const { error: authError } = await supabase.auth.signUp({
+          email: form.email,
+          password: form.password,
+          options: {
+            data: { company_name: form.company, full_name: form.name },
+          },
+        });
         if (authError) throw authError;
         await getWorkspace();
       } else {
-        const { error: authError } = await supabase.auth.signInWithPassword({ email: form.email, password: form.password });
+        const { error: authError } = await supabase.auth.signInWithPassword({
+          email: form.email,
+          password: form.password,
+        });
         if (authError) throw authError;
       }
       onReady();
-    } catch (err) { setError(err.message || "Unable to continue."); }
-    finally { setBusy(false); }
+    } catch (err) {
+      setError(err.message || "Unable to continue.");
+    } finally {
+      setBusy(false);
+    }
   }
 
-  return <main className="access-page"><section className="access-hero"><div className="brand"><Factory /> MANUFACTURER <b>ERP</b></div><div><p className="overline">CONNECTED OPERATIONS</p><h1>Make every<br />operation <em>count.</em></h1><p>One workspace for production, materials, purchasing, and delivery.</p></div><div className="hero-points"><span>✓ One source of operational truth</span><span>✓ Secure company workspaces</span><span>✓ Built for growing manufacturers</span></div></section><section className="access-form"><div className="form-card"><div className="auth-tabs"><button className={!create ? "selected" : ""} onClick={() => setMode("signin")}>Sign in</button><button className={create ? "selected" : ""} onClick={() => setMode("create")}>Create workspace</button></div><p className="overline">{create ? "START FOR FREE" : "SECURE ACCESS"}</p><h2>{create ? "Set up your company" : "Welcome back"}</h2><p className="subtext">{create ? "Create a private home for your operations." : "Sign in to your manufacturing workspace."}</p><form onSubmit={submit}>{create && <><Field label="Company name" value={form.company} onChange={update("company")} placeholder="Your company name" /><Field label="Your full name" value={form.name} onChange={update("name")} placeholder="Your name" /></>}<Field label="Work email" type="email" value={form.email} onChange={update("email")} placeholder="name@company.com" /><PasswordField value={form.password} onChange={update("password")} placeholder={create ? "Create a password" : "Enter your password"} />{error && <p className="form-error">{error}</p>}<button className="primary-button" disabled={busy}>{busy ? "Please wait…" : create ? "Create workspace" : "Sign in"}<ArrowRight size={17} /></button></form></div></section></main>;
+  return (
+    <main className="access-page">
+      <section className="access-hero">
+        <div className="brand">
+          <Factory /> MANUFACTURER <b>ERP</b>
+        </div>
+        <div>
+          <p className="overline">CONNECTED OPERATIONS</p>
+          <h1>
+            Make every
+            <br />
+            operation <em>count.</em>
+          </h1>
+          <p>
+            One workspace for production, materials, purchasing, and delivery.
+          </p>
+        </div>
+        <div className="hero-points">
+          <span>✓ One source of operational truth</span>
+          <span>✓ Secure company workspaces</span>
+          <span>✓ Built for growing manufacturers</span>
+        </div>
+      </section>
+      <section className="access-form">
+        <div className="form-card">
+          <div className="auth-tabs">
+            <button
+              className={!create ? "selected" : ""}
+              onClick={() => setMode("signin")}
+            >
+              Sign in
+            </button>
+            <button
+              className={create ? "selected" : ""}
+              onClick={() => setMode("create")}
+            >
+              Create workspace
+            </button>
+          </div>
+          <p className="overline">
+            {create ? "START FOR FREE" : "SECURE ACCESS"}
+          </p>
+          <h2>{create ? "Set up your company" : "Welcome back"}</h2>
+          <p className="subtext">
+            {create
+              ? "Create a private home for your operations."
+              : "Sign in to your manufacturing workspace."}
+          </p>
+          <form onSubmit={submit}>
+            {create && (
+              <>
+                <Field
+                  label="Company name"
+                  value={form.company}
+                  onChange={update("company")}
+                  placeholder="Your company name"
+                />
+                <Field
+                  label="Your full name"
+                  value={form.name}
+                  onChange={update("name")}
+                  placeholder="Your name"
+                />
+              </>
+            )}
+            <Field
+              label="Work email"
+              type="email"
+              value={form.email}
+              onChange={update("email")}
+              placeholder="name@company.com"
+            />
+            <PasswordField
+              value={form.password}
+              onChange={update("password")}
+              placeholder={create ? "Create a password" : "Enter your password"}
+            />
+            {error && <p className="form-error">{error}</p>}
+            <button className="primary-button" disabled={busy}>
+              {busy ? "Please wait…" : create ? "Create workspace" : "Sign in"}
+              <ArrowRight size={17} />
+            </button>
+          </form>
+        </div>
+      </section>
+    </main>
+  );
 }
 
-function Field({ label, type = "text", ...props }) { if (type === "unit") return <label className="field"><span>{label}</span><select required {...props}><option value="">Select unit</option>{["Centimeter", "Meter", "Kilogram", "Gram", "Tons", "Litre", "ML"].map((unit) => <option key={unit} value={unit}>{unit}</option>)}</select></label>; if (type === "department") return <label className="field"><span>{label}</span><select required {...props}><option value="">Select department</option>{["Manufacturing", "Marketing", "HR", "Purchase", "Accounts", "Administration"].map((department) => <option key={department}>{department}</option>)}</select></label>; return <label className="field"><span>{label}</span><input required type={type} {...props} /></label>; }
-function PasswordField({ value, onChange, placeholder, error = "" }) { const [visible, setVisible] = useState(false); return <label className={`field ${error ? "field-invalid" : ""}`}><span>Password</span><span className="password-input"><input required aria-invalid={Boolean(error)} type={visible ? "text" : "password"} value={value} onChange={onChange} placeholder={placeholder} /><button type="button" onClick={() => setVisible(!visible)} aria-label={visible ? "Hide password" : "Show password"} title={visible ? "Hide password" : "Show password"}>{visible ? <EyeOff size={19} /> : <Eye size={19} />}</button></span>{error && <small className="field-error">{error}</small>}</label>; }
+function Field({ label, type = "text", ...props }) {
+  if (type === "unit")
+    return (
+      <label className="field">
+        <span>{label}</span>
+        <select required {...props}>
+          <option value="">Select unit</option>
+          {[
+            "Centimeter",
+            "Meter",
+            "Kilogram",
+            "Gram",
+            "Tons",
+            "Litre",
+            "ML",
+          ].map((unit) => (
+            <option key={unit} value={unit}>
+              {unit}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  if (type === "department")
+    return (
+      <label className="field">
+        <span>{label}</span>
+        <select required {...props}>
+          <option value="">Select department</option>
+          {[
+            "Manufacturing",
+            "Marketing",
+            "HR",
+            "Purchase",
+            "Accounts",
+            "Administration",
+          ].map((department) => (
+            <option key={department}>{department}</option>
+          ))}
+        </select>
+      </label>
+    );
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <input required type={type} {...props} />
+    </label>
+  );
+}
+function PasswordField({ value, onChange, placeholder, error = "" }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <label className={`field ${error ? "field-invalid" : ""}`}>
+      <span>Password</span>
+      <span className="password-input">
+        <input
+          required
+          aria-invalid={Boolean(error)}
+          type={visible ? "text" : "password"}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible(!visible)}
+          aria-label={visible ? "Hide password" : "Show password"}
+          title={visible ? "Hide password" : "Show password"}
+        >
+          {visible ? <EyeOff size={19} /> : <Eye size={19} />}
+        </button>
+      </span>
+      {error && <small className="field-error">{error}</small>}
+    </label>
+  );
+}
 
 function Workspace({ session, onSignOut }) {
   const [active, setActive] = useState("dashboard");
@@ -99,91 +385,2199 @@ function Workspace({ session, onSignOut }) {
 
   async function load() {
     try {
-      const current = await getWorkspace(); setWorkspace(current);
-      const { data: isPlatformAdmin } = await supabase.rpc("is_platform_administrator");
+      const current = await getWorkspace();
+      setWorkspace(current);
+      const { data: isPlatformAdmin } = await supabase.rpc(
+        "is_platform_administrator",
+      );
       setPlatformAdmin(Boolean(isPlatformAdmin));
-      const expiresAt = current.accessEndsAt ? new Date(current.accessEndsAt).getTime() : 0;
-      if (!isPlatformAdmin && (!["trial", "active"].includes(current.subscriptionStatus) || (expiresAt && expiresAt <= Date.now()))) { setSubscriptionBlocked(true); return; }
-      const [productResult, materialResult, salesResult, orderResult, expenseResult, requestResult, dispatchResult, employeeResult, processResult, attendanceResult, jobResult, bomResult] = await Promise.all([
-        supabase.from("products").select("*").eq("organization_id", current.id).order("created_at", { ascending: false }),
-        supabase.from("raw_materials").select("*").eq("organization_id", current.id).order("created_at", { ascending: false }),
-        supabase.from("sales").select("*").eq("organization_id", current.id).order("created_at", { ascending: false }),
-        supabase.from("purchase_orders").select("*").eq("organization_id", current.id).order("created_at", { ascending: false }),
-        supabase.from("expenses").select("*").eq("organization_id", current.id).order("created_at", { ascending: false }),
-        supabase.from("material_requests").select("*, raw_materials(name, unit)").eq("organization_id", current.id).order("created_at", { ascending: false }),
-        supabase.from("dispatches").select("*, products(name)").eq("organization_id", current.id).order("created_at", { ascending: false }),
-        supabase.from("employees").select("*").eq("organization_id", current.id).order("created_at", { ascending: false }),
-        supabase.from("process_definitions").select("*, products(name)").eq("organization_id", current.id).order("created_at"),
-        supabase.from("attendance").select("*").eq("organization_id", current.id).order("attendance_date", { ascending: false }),
-        supabase.from("jobs").select("*").eq("organization_id", current.id).order("created_at", { ascending: false }),
-        supabase.from("job_bom_items").select("*").eq("organization_id", current.id).order("created_at"),
+      const expiresAt = current.accessEndsAt
+        ? new Date(current.accessEndsAt).getTime()
+        : 0;
+      if (
+        !isPlatformAdmin &&
+        (!["trial", "active"].includes(current.subscriptionStatus) ||
+          (expiresAt && expiresAt <= Date.now()))
+      ) {
+        setSubscriptionBlocked(true);
+        return;
+      }
+      const [
+        productResult,
+        materialResult,
+        salesResult,
+        orderResult,
+        expenseResult,
+        requestResult,
+        dispatchResult,
+        employeeResult,
+        processResult,
+        attendanceResult,
+        jobResult,
+        bomResult,
+      ] = await Promise.all([
+        supabase
+          .from("products")
+          .select("*")
+          .eq("organization_id", current.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("raw_materials")
+          .select("*")
+          .eq("organization_id", current.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("sales")
+          .select("*")
+          .eq("organization_id", current.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("purchase_orders")
+          .select("*")
+          .eq("organization_id", current.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("expenses")
+          .select("*")
+          .eq("organization_id", current.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("material_requests")
+          .select("*, raw_materials(name, unit)")
+          .eq("organization_id", current.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("dispatches")
+          .select("*, products(name)")
+          .eq("organization_id", current.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("employees")
+          .select("*")
+          .eq("organization_id", current.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("process_definitions")
+          .select("*, products(name)")
+          .eq("organization_id", current.id)
+          .order("created_at"),
+        supabase
+          .from("attendance")
+          .select("*")
+          .eq("organization_id", current.id)
+          .order("attendance_date", { ascending: false }),
+        supabase
+          .from("jobs")
+          .select("*")
+          .eq("organization_id", current.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("job_bom_items")
+          .select("*")
+          .eq("organization_id", current.id)
+          .order("created_at"),
       ]);
-      if (productResult.error || materialResult.error || salesResult.error || orderResult.error || expenseResult.error || requestResult.error || dispatchResult.error || employeeResult.error || processResult.error || attendanceResult.error || jobResult.error || bomResult.error) throw productResult.error || materialResult.error || salesResult.error || orderResult.error || expenseResult.error || requestResult.error || dispatchResult.error || employeeResult.error || processResult.error || attendanceResult.error || jobResult.error || bomResult.error;
-      setProducts(productResult.data); setMaterials(materialResult.data); setSales(salesResult.data);
-      setPurchaseOrders(orderResult.data); setExpenses(expenseResult.data);
-      setMaterialRequests(requestResult.data); setDispatches(dispatchResult.data);
+      if (
+        productResult.error ||
+        materialResult.error ||
+        salesResult.error ||
+        orderResult.error ||
+        expenseResult.error ||
+        requestResult.error ||
+        dispatchResult.error ||
+        employeeResult.error ||
+        processResult.error ||
+        attendanceResult.error ||
+        jobResult.error ||
+        bomResult.error
+      )
+        throw (
+          productResult.error ||
+          materialResult.error ||
+          salesResult.error ||
+          orderResult.error ||
+          expenseResult.error ||
+          requestResult.error ||
+          dispatchResult.error ||
+          employeeResult.error ||
+          processResult.error ||
+          attendanceResult.error ||
+          jobResult.error ||
+          bomResult.error
+        );
+      setProducts(productResult.data);
+      setMaterials(materialResult.data);
+      setSales(salesResult.data);
+      setPurchaseOrders(orderResult.data);
+      setExpenses(expenseResult.data);
+      setMaterialRequests(requestResult.data);
+      setDispatches(dispatchResult.data);
       setEmployees(employeeResult.data);
-      setProcessDefinitions(processResult.data); setAttendance(attendanceResult.data);
-      setJobs(jobResult.data); setBomItems(bomResult.data);
-    } catch (err) { setError(err.message || "Could not load workspace data."); }
-    finally { setWorkspaceLoading(false); }
+      setProcessDefinitions(processResult.data);
+      setAttendance(attendanceResult.data);
+      setJobs(jobResult.data);
+      setBomItems(bomResult.data);
+    } catch (err) {
+      setError(err.message || "Could not load workspace data.");
+    } finally {
+      setWorkspaceLoading(false);
+    }
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
-  const stats = useMemo(() => ({ stock: products.reduce((n, row) => n + Number(row.stock), 0), materials: materials.reduce((n, row) => n + Number(row.stock), 0), sales: sales.reduce((n, row) => n + Number(row.grand_total), 0), expenses: expenses.reduce((n, row) => n + Number(row.amount), 0) }), [products, materials, sales, expenses]);
+  const stats = useMemo(
+    () => ({
+      stock: products.reduce((n, row) => n + Number(row.stock), 0),
+      materials: materials.reduce((n, row) => n + Number(row.stock), 0),
+      sales: sales.reduce((n, row) => n + Number(row.grand_total), 0),
+      expenses: expenses.reduce((n, row) => n + Number(row.amount), 0),
+    }),
+    [products, materials, sales, expenses],
+  );
 
-  if (subscriptionBlocked) return <SubscriptionEnded workspace={workspace} onSignOut={onSignOut} />;
+  if (subscriptionBlocked)
+    return <SubscriptionEnded workspace={workspace} onSignOut={onSignOut} />;
   if (workspaceLoading) return <Notice text="Loading your workspace…" />;
-  if (!workspace) return <main className="subscription-blocked"><Factory size={34} /><p className="overline">WORKSPACE SETUP NEEDED</p><h1>We couldn’t load this workspace.</h1><p>{error || "Run the latest Supabase SQL migration, then try again."}</p><button className="primary-button" onClick={onSignOut}>Sign out</button></main>;
+  if (!workspace)
+    return (
+      <main className="subscription-blocked">
+        <Factory size={34} />
+        <p className="overline">WORKSPACE SETUP NEEDED</p>
+        <h1>We couldn’t load this workspace.</h1>
+        <p>
+          {error || "Run the latest Supabase SQL migration, then try again."}
+        </p>
+        <button className="primary-button" onClick={onSignOut}>
+          Sign out
+        </button>
+      </main>
+    );
 
   async function addRecord(table, values) {
-    const { data, error: insertError } = await supabase.from(table).insert({ ...values, organization_id: workspace.id }).select().single();
-    if (insertError) { setError(insertError.message); return null; }
+    const { data, error: insertError } = await supabase
+      .from(table)
+      .insert({ ...values, organization_id: workspace.id })
+      .select()
+      .single();
+    if (insertError) {
+      setError(insertError.message);
+      return null;
+    }
     await load();
     return data;
   }
   const role = workspace?.role || "employee";
-  const currentEmployee = employees.find((employee) => employee.email?.toLowerCase() === session.user.email?.toLowerCase());
-  const manufacturingEmployee = role === "employee" && currentEmployee?.department === "Manufacturing";
-  const visibleNavigation = [...navigation.filter((item) => item.roles.includes(role) && (role !== "employee" || item.id === "dashboard" || item.id === "attendance" || (manufacturingEmployee && ["procurement", "process"].includes(item.id)))), ...(platformAdmin ? [{ id: "platform-admin", label: "Platform admin", icon: Settings, platform: true }] : [])];
-  const title = active === "platform-admin" ? "Platform administrator" : navigation.find((item) => item.id === active)?.label || "Dashboard";
+  const currentEmployee = employees.find(
+    (employee) =>
+      employee.email?.toLowerCase() === session.user.email?.toLowerCase(),
+  );
+  const manufacturingEmployee =
+    role === "employee" && currentEmployee?.department === "Manufacturing";
+  const visibleNavigation = [
+    ...navigation.filter(
+      (item) =>
+        item.roles.includes(role) &&
+        (role !== "employee" ||
+          item.id === "dashboard" ||
+          item.id === "attendance" ||
+          (manufacturingEmployee &&
+            ["procurement", "process"].includes(item.id))),
+    ),
+    ...(platformAdmin
+      ? [
+          {
+            id: "platform-admin",
+            label: "Platform admin",
+            icon: Settings,
+            platform: true,
+          },
+        ]
+      : []),
+  ];
+  const title =
+    active === "platform-admin"
+      ? "Platform administrator"
+      : navigation.find((item) => item.id === active)?.label || "Dashboard";
 
-  const run = async (action) => { try { setError(""); await action(); await load(); return true; } catch (err) { setError(err.message || "Operation failed."); return false; } };
-  return <div className="erp-shell">{navigationOpen && <button className="sidebar-backdrop" aria-label="Close navigation" onClick={() => setNavigationOpen(false)} />}<aside className={`erp-sidebar ${navigationOpen ? "sidebar-open" : ""}`}><div className="brand"><Factory /> MANUFACTURER <b>ERP</b><button className="sidebar-close" aria-label="Close navigation" onClick={() => setNavigationOpen(false)}><X size={20} /></button></div><p className="workspace-label">{workspace?.name || "Loading workspace"} · {role}</p><nav>{visibleNavigation.map(({ id, label, icon: Icon, platform }) => <button key={id} className={`${active === id ? "nav-active" : ""} ${platform ? "nav-platform" : ""}`} onClick={() => { setActive(id); setNavigationOpen(false); }} title={label}><Icon size={18} />{label}{platform && <small>PLATFORM ADMIN</small>}</button>)}</nav><SupportContact workspace={workspace} /><button className="logout" onClick={onSignOut}><LogOut size={17} />Sign out</button></aside><main className="erp-content"><header><div className="page-heading"><button className="mobile-menu" aria-label="Open navigation" onClick={() => setNavigationOpen(true)}><Menu size={22} /></button><div><p className="overline">OPERATIONS CENTER</p><h1>{title}</h1></div></div><span className="user-pill">{session.user.email}</span></header>{error && <p className="app-error">{error}</p>}<Module active={active} role={role} platformAdmin={platformAdmin} stats={stats} products={products} materials={materials} sales={sales} purchaseOrders={purchaseOrders} expenses={expenses} materialRequests={materialRequests} dispatches={dispatches} employees={employees} processDefinitions={processDefinitions} attendance={attendance} jobs={jobs} bomItems={bomItems} currentEmployee={currentEmployee} addRecord={addRecord} run={run} /></main></div>;
+  const run = async (action) => {
+    try {
+      setError("");
+      await action();
+      await load();
+      return true;
+    } catch (err) {
+      setError(err.message || "Operation failed.");
+      return false;
+    }
+  };
+  return (
+    <div className="erp-shell">
+      {navigationOpen && (
+        <button
+          className="sidebar-backdrop"
+          aria-label="Close navigation"
+          onClick={() => setNavigationOpen(false)}
+        />
+      )}
+      <aside className={`erp-sidebar ${navigationOpen ? "sidebar-open" : ""}`}>
+        <div className="brand">
+          <Factory /> MANUFACTURER <b>ERP</b>
+          <button
+            className="sidebar-close"
+            aria-label="Close navigation"
+            onClick={() => setNavigationOpen(false)}
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <p className="workspace-label">
+          {workspace?.name || "Loading workspace"} · {role}
+        </p>
+        <nav>
+          {visibleNavigation.map(({ id, label, icon: Icon, platform }) => (
+            <button
+              key={id}
+              className={`${active === id ? "nav-active" : ""} ${platform ? "nav-platform" : ""}`}
+              onClick={() => {
+                setActive(id);
+                setNavigationOpen(false);
+              }}
+              title={label}
+            >
+              <Icon size={18} />
+              {label}
+              {platform && <small>PLATFORM ADMIN</small>}
+            </button>
+          ))}
+        </nav>
+        <SupportContact workspace={workspace} />
+        <button className="logout" onClick={onSignOut}>
+          <LogOut size={17} />
+          Sign out
+        </button>
+      </aside>
+      <main className="erp-content">
+        <header>
+          <div className="page-heading">
+            <button
+              className="mobile-menu"
+              aria-label="Open navigation"
+              onClick={() => setNavigationOpen(true)}
+            >
+              <Menu size={22} />
+            </button>
+            <div>
+              <p className="overline">OPERATIONS CENTER</p>
+              <h1>{title}</h1>
+            </div>
+          </div>
+          <span className="user-pill">{session.user.email}</span>
+        </header>
+        {error && <p className="app-error">{error}</p>}
+        <Module
+          active={active}
+          role={role}
+          platformAdmin={platformAdmin}
+          stats={stats}
+          products={products}
+          materials={materials}
+          sales={sales}
+          purchaseOrders={purchaseOrders}
+          expenses={expenses}
+          materialRequests={materialRequests}
+          dispatches={dispatches}
+          employees={employees}
+          processDefinitions={processDefinitions}
+          attendance={attendance}
+          jobs={jobs}
+          bomItems={bomItems}
+          currentEmployee={currentEmployee}
+          addRecord={addRecord}
+          run={run}
+        />
+      </main>
+    </div>
+  );
 }
 
-function Module({ active, role, platformAdmin, stats, products, materials, sales, purchaseOrders, expenses, materialRequests, dispatches, employees, processDefinitions, attendance, jobs, bomItems, currentEmployee, addRecord, run }) {
-  if (active === "dashboard") return <><div className="stat-grid"><Stat label="Finished goods" value={products.length} icon={<Boxes />} /><Stat label="Product stock" value={stats.stock} icon={<PackageCheck />} /><Stat label="Raw material units" value={stats.materials} icon={<Warehouse />} /><Stat label="Recorded sales" value={money.format(stats.sales)} icon={<ClipboardList />} /></div><section className="panel"><h3>Operational overview</h3><p>Your cloud workspace is ready. Add inventory, materials, and sales records to begin tracking your factory operations.</p></section></>;
-  if (active === "purchase-orders") return <PurchaseOrders rows={purchaseOrders} onSave={(values, editingId) => run(async () => { const { error } = await supabase.rpc(editingId ? "update_purchase_order" : "create_purchase_order", editingId ? { order_id: editingId, ...values } : values); if (error) throw error; })} />;
-  if (active === "jobs") return <JobsModule jobs={jobs} bomItems={bomItems} materials={materials} addRecord={addRecord} run={run} />;
-  if (active === "inventory") return <><RecordModule title="Raw materials" sectionTitle="Raw materials" description="Updated only when a Purchase Order is saved. View available material quantities here." rows={materials} empty="No raw materials received from purchase orders yet." fields={[]} onAdd={() => null} columns={["name", "stock"]} readOnly /><RecordModule title="Finished goods" sectionTitle="Finished goods" description="Created only through Manufacturing Process completion." rows={products} empty="No finished goods recorded." fields={[]} onAdd={() => null} columns={["name", "sku", "stock", "price"]} readOnly /></>;
-  if (active === "procurement") return <MaterialProcurement role={role} materials={materials} requests={materialRequests} onAdd={(data) => addRecord("material_requests", data)} onApprove={(id) => run(async () => { const { error } = await supabase.from("material_requests").update({ status: "approved" }).eq("id", id); if (error) throw error; })} onRelease={(id) => run(async () => { const { error } = await supabase.rpc("release_material_request", { request_id: id }); if (error) throw error; })} onDelete={(id) => run(async () => { const { error } = await supabase.from("material_requests").delete().eq("id", id).eq("status", "requested"); if (error) throw error; })} />;
-  if (active === "process") return <ProductionModule products={products} assignedProcess={currentEmployee?.assigned_process_id ? processDefinitions.find((process) => process.id === currentEmployee.assigned_process_id) : null} employee={currentEmployee} onProduce={(data) => run(async () => { const { error } = await supabase.rpc("record_production", { product_uuid: data.product_id, produced_quantity: Number(data.quantity), note: data.process_note || null }); if (error) throw error; })} />;
-  if (active === "dispatch") return <DispatchModule products={products} rows={dispatches} onDispatch={(data) => run(async () => { const { error } = await supabase.rpc("record_dispatch", { product_uuid: data.product_id, customer: data.customer_name, dispatch_ref: data.dispatch_number, dispatch_quantity: Number(data.quantity) }); if (error) throw error; })} />;
+function Module({
+  active,
+  role,
+  platformAdmin,
+  stats,
+  products,
+  materials,
+  sales,
+  purchaseOrders,
+  expenses,
+  materialRequests,
+  dispatches,
+  employees,
+  processDefinitions,
+  attendance,
+  jobs,
+  bomItems,
+  currentEmployee,
+  addRecord,
+  run,
+}) {
+  if (active === "dashboard")
+    return (
+      <>
+        <div className="stat-grid">
+          <Stat
+            label="Finished goods"
+            value={products.length}
+            icon={<Boxes />}
+          />
+          <Stat
+            label="Product stock"
+            value={stats.stock}
+            icon={<PackageCheck />}
+          />
+          <Stat
+            label="Raw material units"
+            value={stats.materials}
+            icon={<Warehouse />}
+          />
+          <Stat
+            label="Recorded sales"
+            value={money.format(stats.sales)}
+            icon={<ClipboardList />}
+          />
+        </div>
+        <section className="panel">
+          <h3>Operational overview</h3>
+          <p>
+            Your cloud workspace is ready. Add inventory, materials, and sales
+            records to begin tracking your factory operations.
+          </p>
+        </section>
+      </>
+    );
+  if (active === "purchase-orders")
+    return (
+      <PurchaseOrders
+        rows={purchaseOrders}
+        onSave={(values, editingId) =>
+          run(async () => {
+            const { error } = await supabase.rpc(
+              editingId ? "update_purchase_order" : "create_purchase_order",
+              editingId ? { order_id: editingId, ...values } : values,
+            );
+            if (error) throw error;
+          })
+        }
+      />
+    );
+  if (active === "jobs")
+    return (
+      <JobsModule
+        jobs={jobs}
+        bomItems={bomItems}
+        materials={materials}
+        addRecord={addRecord}
+        run={run}
+      />
+    );
+  if (active === "inventory")
+    return (
+      <>
+        <RecordModule
+          title="Raw materials"
+          sectionTitle="Raw materials"
+          description="Updated only when a Purchase Order is saved. View available material quantities here."
+          rows={materials}
+          empty="No raw materials received from purchase orders yet."
+          fields={[]}
+          onAdd={() => null}
+          columns={["name", "stock"]}
+          readOnly
+        />
+        <RecordModule
+          title="Finished goods"
+          sectionTitle="Finished goods"
+          description="Created only through Manufacturing Process completion."
+          rows={products}
+          empty="No finished goods recorded."
+          fields={[]}
+          onAdd={() => null}
+          columns={["name", "sku", "stock", "price"]}
+          readOnly
+        />
+      </>
+    );
+  if (active === "procurement")
+    return (
+      <MaterialProcurement
+        role={role}
+        materials={materials}
+        requests={materialRequests}
+        onAdd={(data) => addRecord("material_requests", data)}
+        onApprove={(id) =>
+          run(async () => {
+            const { error } = await supabase
+              .from("material_requests")
+              .update({ status: "approved" })
+              .eq("id", id);
+            if (error) throw error;
+          })
+        }
+        onRelease={(id) =>
+          run(async () => {
+            const { error } = await supabase.rpc("release_material_request", {
+              request_id: id,
+            });
+            if (error) throw error;
+          })
+        }
+        onDelete={(id) =>
+          run(async () => {
+            const { error } = await supabase
+              .from("material_requests")
+              .delete()
+              .eq("id", id)
+              .eq("status", "requested");
+            if (error) throw error;
+          })
+        }
+      />
+    );
+  if (active === "process")
+    return (
+      <ProductionModule
+        products={products}
+        assignedProcess={
+          currentEmployee?.assigned_process_id
+            ? processDefinitions.find(
+                (process) => process.id === currentEmployee.assigned_process_id,
+              )
+            : null
+        }
+        employee={currentEmployee}
+        onProduce={(data) =>
+          run(async () => {
+            const { error } = await supabase.rpc("record_production", {
+              product_uuid: data.product_id,
+              produced_quantity: Number(data.quantity),
+              note: data.process_note || null,
+            });
+            if (error) throw error;
+          })
+        }
+      />
+    );
+  if (active === "dispatch")
+    return (
+      <DispatchModule
+        products={products}
+        rows={dispatches}
+        onDispatch={(data) =>
+          run(async () => {
+            const { error } = await supabase.rpc("record_dispatch", {
+              product_uuid: data.product_id,
+              customer: data.customer_name,
+              dispatch_ref: data.dispatch_number,
+              dispatch_quantity: Number(data.quantity),
+            });
+            if (error) throw error;
+          })
+        }
+      />
+    );
   if (active === "sales") return <SalesHistory rows={dispatches} />;
-  if (active === "expenses") return <ExpenseModule rows={expenses} onAdd={(data) => addRecord("expenses", { ...data, amount: Number(data.amount), recorded_at: new Date(data.recorded_at).toISOString() })} />;
-  if (active === "financial") return <FinancialModule stats={stats} purchaseOrders={purchaseOrders} />;
-  if (active === "people") return <PeopleModule rows={employees} processes={processDefinitions} onCreateLogin={(data) => run(async () => { const { data: result, error } = await supabase.functions.invoke("create-employee-login", { body: data }); if (error) { const response = error.context; if (response instanceof Response) { const detail = await response.json().catch(() => null); if (detail?.error) throw new Error(detail.error); } throw error; } if (result?.error) throw new Error(result.error); })} />;
-  if (active === "attendance") return <AttendanceModule employee={currentEmployee} rows={attendance} onMark={(status) => run(async () => { const { error } = await supabase.rpc("mark_my_attendance", { attendance_status: status }); if (error) throw error; })} />;
+  if (active === "expenses")
+    return (
+      <ExpenseModule
+        rows={expenses}
+        onAdd={(data) =>
+          addRecord("expenses", {
+            ...data,
+            amount: Number(data.amount),
+            recorded_at: new Date(data.recorded_at).toISOString(),
+          })
+        }
+      />
+    );
+  if (active === "financial")
+    return <FinancialModule stats={stats} purchaseOrders={purchaseOrders} />;
+  if (active === "people")
+    return (
+      <PeopleModule
+        rows={employees}
+        processes={processDefinitions}
+        onCreateLogin={(data) =>
+          run(async () => {
+            const { data: result, error } = await supabase.functions.invoke(
+              "create-employee-login",
+              { body: data },
+            );
+            if (error) {
+              const response = error.context;
+              if (response instanceof Response) {
+                const detail = await response.json().catch(() => null);
+                if (detail?.error) throw new Error(detail.error);
+              }
+              throw error;
+            }
+            if (result?.error) throw new Error(result.error);
+          })
+        }
+      />
+    );
+  if (active === "attendance")
+    return (
+      <AttendanceModule
+        employee={currentEmployee}
+        rows={attendance}
+        onMark={(status) =>
+          run(async () => {
+            const { error } = await supabase.rpc("mark_my_attendance", {
+              attendance_status: status,
+            });
+            if (error) throw error;
+          })
+        }
+      />
+    );
   if (active === "platform-admin" && platformAdmin) return <PlatformAdmin />;
-  if (active === "process-builder" && role === "superadmin") return <ProcessBuilder products={products} onAddProduct={(data) => addRecord("products", data)} onSavePlan={(productId, steps, materialMode) => run(async () => { const { error } = await supabase.rpc("replace_product_process_plan", { target_product_id: productId, process_names: steps.map((step) => step.name.trim()), fetch_mode: materialMode }); if (error) throw error; })} />;
-  return <OperationalModule icon={<Settings />} title="Workspace settings" description="Configure your company workspace and operational preferences." steps={["Organization profile", "Access control", "Data preferences"]} />;
+  if (active === "process-builder" && role === "superadmin")
+    return (
+      <ProcessBuilder
+        products={products}
+        onAddProduct={(data) => addRecord("products", data)}
+        onSavePlan={(productId, steps, materialMode) =>
+          run(async () => {
+            const { error } = await supabase.rpc(
+              "replace_product_process_plan",
+              {
+                target_product_id: productId,
+                process_names: steps.map((step) => step.name.trim()),
+                fetch_mode: materialMode,
+              },
+            );
+            if (error) throw error;
+          })
+        }
+      />
+    );
+  return (
+    <OperationalModule
+      icon={<Settings />}
+      title="Workspace settings"
+      description="Configure your company workspace and operational preferences."
+      steps={["Organization profile", "Access control", "Data preferences"]}
+    />
+  );
 }
 
-function OperationalModule({ icon, title, description, steps }) { return <section className="panel operational-module"><span className="module-icon">{icon}</span><h3>{title}</h3><p>{description}</p><div className="process-steps">{steps.map((step, index) => <span key={step}><b>{index + 1}</b>{step}</span>)}</div></section>; }
-function SupportContact({ workspace }) { const subject = encodeURIComponent(`Manufacturer ERP support — ${workspace?.name || "workspace"}`); const body = encodeURIComponent(`Hello, I need help with ${workspace?.name || "my Manufacturer ERP workspace"}.`); if (!workspace?.supportEmail && !workspace?.supportPhone) return null; return <div className="sidebar-support"><span>Need help?</span>{workspace.supportEmail && <a href={`mailto:${workspace.supportEmail}?subject=${subject}&body=${body}`}>Contact support</a>}{workspace.supportPhone && <a href={`tel:${workspace.supportPhone.replace(/\s/g, "")}`}>{workspace.supportPhone}</a>}</div>; }
-function PlatformAdmin() { const [customers, setCustomers] = useState([]); const [events, setEvents] = useState([]); const [eventLimit, setEventLimit] = useState(10); const [selected, setSelected] = useState(""); const [days, setDays] = useState("30"); const [contactEmail, setContactEmail] = useState(""); const [contactPhone, setContactPhone] = useState(""); const [message, setMessage] = useState(""); const load = async () => { const [{ data: customerRows, error: customerError }, { data: eventRows, error: eventError }, { data: settingsRows, error: settingsError }] = await Promise.all([supabase.rpc("get_platform_customers"), supabase.rpc("get_platform_access_events"), supabase.rpc("get_platform_support_settings")]); if (customerError || eventError || settingsError) { setMessage((customerError || eventError || settingsError).message); return; } setCustomers(customerRows || []); setEvents(eventRows || []); setEventLimit(10); setContactEmail(settingsRows?.[0]?.support_email || ""); setContactPhone(settingsRows?.[0]?.support_phone || ""); }; useEffect(() => { load(); }, []); const renew = async () => { if (!selected) { setMessage("Select a customer workspace first."); return; } const { error } = await supabase.rpc("set_customer_subscription", { target_organization_id: selected, access_days: Number(days) }); if (error) { setMessage(error.message); return; } setMessage("Subscription updated successfully."); load(); }; const saveSupport = async () => { const { error } = await supabase.rpc("update_platform_support_settings", { contact_email: contactEmail, contact_phone: contactPhone }); if (error) { setMessage(error.message); return; } setMessage("Global support contact saved for every customer."); }; const suspend = async () => { if (!selected) return; const { error } = await supabase.rpc("suspend_customer_subscription", { target_organization_id: selected }); if (error) { setMessage(error.message); return; } setMessage("Customer access has been suspended."); load(); }; const visibleEvents = events.slice(0, eventLimit); return <><div className="module-heading"><div><h2>Customer subscriptions</h2><p>Manage all customer access and one shared support contact.</p></div></div><section className="panel admin-controls"><Field label="Global support email" type="email" value={contactEmail} onChange={(event) => setContactEmail(event.target.value)} /><Field label="Global support phone" value={contactPhone} onChange={(event) => setContactPhone(event.target.value)} /><button className="primary-button compact" onClick={saveSupport}>Save global support</button></section><section className="panel admin-controls"><label className="field"><span>Customer workspace</span><select value={selected} onChange={(event) => setSelected(event.target.value)}><option value="">Select customer</option>{customers.map((customer) => <option key={customer.organization_id} value={customer.organization_id}>{customer.organization_name} — {customer.owner_email} — {customer.status}</option>)}</select></label><Field label="Paid access duration (days)" type="number" min="1" max="3650" value={days} onChange={(event) => setDays(event.target.value)} /><button className="primary-button compact" onClick={renew}>Mark paid / renew</button><button className="danger-button" onClick={suspend}>Suspend access</button>{message && <p className="builder-note">{message}</p>}</section><section className="panel table-panel"><h3>Customer workspaces</h3><table><thead><tr><th>Company</th><th>Owner</th><th>Status</th><th>Access ends</th><th>Last renewed</th></tr></thead><tbody>{customers.map((customer) => <tr key={customer.organization_id}><td>{customer.organization_name}</td><td>{customer.owner_email}</td><td>{customer.status}</td><td>{customer.access_ends_at ? new Date(customer.access_ends_at).toLocaleString("en-IN") : "—"}</td><td>{customer.last_renewed_at ? new Date(customer.last_renewed_at).toLocaleString("en-IN") : "—"}</td></tr>)}</tbody></table></section><section className="panel table-panel"><h3>Recent EXE / web access</h3><table><thead><tr><th>Date & time</th><th>Company</th><th>User</th><th>Event</th><th>Status</th></tr></thead><tbody>{visibleEvents.map((event, index) => <tr key={`${event.occurred_at}-${index}`}><td>{new Date(event.occurred_at).toLocaleString("en-IN")}</td><td>{event.organization_name}</td><td>{event.user_email}</td><td>{event.event_type}</td><td>{event.subscription_status}</td></tr>)}</tbody></table><div className="access-pagination">{events.length > eventLimit && <button className="row-action" onClick={() => setEventLimit((limit) => limit + 10)}>Show 10 more</button>}{eventLimit > 10 && <button className="row-action" onClick={() => setEventLimit(10)}>Show less</button>}</div></section></>; }
-function SubscriptionEnded({ workspace, onSignOut }) { const subject = encodeURIComponent(`Manufacturer ERP renewal request — ${workspace?.name || "workspace"}`); const body = encodeURIComponent(`Hello, I would like to renew access to ${workspace?.name || "my Manufacturer ERP workspace"}.`); return <main className="subscription-blocked"><Factory size={34} /><p className="overline">SUBSCRIPTION REQUIRED</p><h1>Your trial or subscription has ended.</h1><p>Your ERP records remain safely stored. Renew access to continue using the same workspace and data.</p>{workspace?.supportEmail ? <a className="primary-button" href={`mailto:${workspace.supportEmail}?subject=${subject}&body=${body}`}>Contact support for renewal</a> : <p className="subscription-contact">Contact your Manufacturer ERP provider to renew this workspace.</p>}{workspace?.supportPhone && <p className="subscription-contact">Support: {workspace.supportPhone}</p>}<button className="subscription-signout" onClick={onSignOut}>Sign out</button></main>; }
-function JobsModule({ jobs, bomItems, materials, addRecord }) { const [open, setOpen] = useState(false); const [selected, setSelected] = useState(""); const [job, setJob] = useState({ job_name: "", project_name: "", customer_name: "", design_requirements: "", height: "", breadth: "", length: "", sheet_count: "" }); const [bom, setBom] = useState({ raw_material_id: "", planned_quantity: "", vendor_reference: "" }); const createJob = async (event) => { event.preventDefault(); const saved = await addRecord("jobs", { ...job, height: Number(job.height || 0), breadth: Number(job.breadth || 0), length: Number(job.length || 0), sheet_count: Number(job.sheet_count || 0) }); if (saved) { setOpen(false); setJob({ job_name: "", project_name: "", customer_name: "", design_requirements: "", height: "", breadth: "", length: "", sheet_count: "" }); } }; const addBom = async (event) => { event.preventDefault(); const material = materials.find((item) => item.id === bom.raw_material_id); if (!selected || !material) return; await addRecord("job_bom_items", { job_id: selected, raw_material_id: material.id, material_name: material.name, planned_quantity: Number(bom.planned_quantity), unit: material.unit, vendor_reference: bom.vendor_reference || null }); setBom({ raw_material_id: "", planned_quantity: "", vendor_reference: "" }); }; const selectedBom = bomItems.filter((item) => item.job_id === selected); return <><div className="module-heading"><div><p>Create a job before production. Design requirements and BOM are planned here; this page never changes stock.</p></div><button className="primary-button compact" onClick={() => setOpen(!open)}><Plus size={17} />Create job</button></div>{open && <form className="record-form panel" onSubmit={createJob}><Field label="Job name" value={job.job_name} onChange={(e) => setJob({ ...job, job_name: e.target.value })} /><Field label="Project name" value={job.project_name} onChange={(e) => setJob({ ...job, project_name: e.target.value })} /><Field label="Customer" value={job.customer_name} onChange={(e) => setJob({ ...job, customer_name: e.target.value })} /><Field label="Design requirements" value={job.design_requirements} onChange={(e) => setJob({ ...job, design_requirements: e.target.value })} placeholder="Design / drawing reference" /><Field label="Height" type="number" min="0" value={job.height} onChange={(e) => setJob({ ...job, height: e.target.value })} /><Field label="Breadth" type="number" min="0" value={job.breadth} onChange={(e) => setJob({ ...job, breadth: e.target.value })} /><Field label="Length" type="number" min="0" value={job.length} onChange={(e) => setJob({ ...job, length: e.target.value })} /><Field label="No. of sheets" type="number" min="0" value={job.sheet_count} onChange={(e) => setJob({ ...job, sheet_count: e.target.value })} /><button className="primary-button compact">Save job</button></form>}<section className="panel table-panel"><h3>Jobs</h3>{jobs.length ? <table><thead><tr><th>Job</th><th>Project</th><th>Customer</th><th>Requirements</th><th>Status</th></tr></thead><tbody>{jobs.map((item) => <tr key={item.id} className={selected === item.id ? "selected-row" : ""} onClick={() => setSelected(item.id)}><td>{item.job_name}</td><td>{item.project_name || "—"}</td><td>{item.customer_name || "—"}</td><td>{item.design_requirements || "—"}</td><td>{item.status}</td></tr>)}</tbody></table> : <div className="empty"><FileBarChart size={27} />No jobs created.</div>}</section>{selected && <><form className="record-form panel" onSubmit={addBom}><label className="field"><span>BOM material</span><select required value={bom.raw_material_id} onChange={(e) => setBom({ ...bom, raw_material_id: e.target.value })}><option value="">Select material from Raw Materials</option>{materials.map((material) => <option key={material.id} value={material.id}>{material.name} — available {material.stock} {material.unit}</option>)}</select></label><Field label="Planned quantity" type="number" min="0.01" value={bom.planned_quantity} onChange={(e) => setBom({ ...bom, planned_quantity: e.target.value })} /><Field label="Vendor reference" value={bom.vendor_reference} onChange={(e) => setBom({ ...bom, vendor_reference: e.target.value })} placeholder="Optional vendor / source" /><button className="primary-button compact">Add BOM item</button></form><section className="panel table-panel"><h3>Selected job BOM</h3>{selectedBom.length ? <table><thead><tr><th>Material</th><th>Planned quantity</th><th>Unit</th><th>Vendor</th></tr></thead><tbody>{selectedBom.map((item) => <tr key={item.id}><td>{item.material_name}</td><td>{item.planned_quantity}</td><td>{item.unit}</td><td>{item.vendor_reference || "—"}</td></tr>)}</tbody></table> : <div className="empty">No BOM items planned for this job.</div>}</section></>}</>; }
-function PurchaseOrders({ rows, onSave }) { const [open, setOpen] = useState(false); const [editing, setEditing] = useState(null); const blank = { supplier: "", po_number: "", material: "", material_code: "", material_quantity: "", material_unit: "", material_unit_cost: "", revision_note: "" }; const [form, setForm] = useState(blank); const submit = async (event) => { event.preventDefault(); const { revision_note, ...po } = form; await onSave({ ...po, material_quantity: Number(po.material_quantity), material_unit_cost: Number(po.material_unit_cost), ...(editing ? { revision_note } : {}) }, editing?.id); setOpen(false); setEditing(null); setForm(blank); }; const edit = (row) => { setEditing(row); setForm({ supplier: row.supplier_name || "", po_number: row.purchase_order_number || "", material: row.material_name || "", material_code: row.material_sku || "", material_quantity: row.quantity || "", material_unit: row.unit || "", material_unit_cost: row.unit_cost || "", revision_note: "" }); setOpen(true); }; return <><div className="module-heading"><div><p>Purchase Orders are the starting point. Saving a PO immediately adds its material quantity to Raw Materials inventory. Later changes require a revision note and are recorded for tracking.</p></div><button className="primary-button compact" onClick={() => { setEditing(null); setForm(blank); setOpen(!open); }}><Plus size={17} />Create purchase order</button></div>{open && <form className="record-form panel" onSubmit={submit}><Field label="Vendor name" value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} /><Field label="PO number" value={form.po_number} onChange={(e) => setForm({ ...form, po_number: e.target.value })} /><Field label="Raw material name" value={form.material} onChange={(e) => setForm({ ...form, material: e.target.value })} /><Field label="Material SKU" value={form.material_code} onChange={(e) => setForm({ ...form, material_code: e.target.value })} /><Field label="Quantity" type="number" min="0.01" value={form.material_quantity} onChange={(e) => setForm({ ...form, material_quantity: e.target.value })} /><Field label="Unit" type="unit" value={form.material_unit} onChange={(e) => setForm({ ...form, material_unit: e.target.value })} /><Field label="Unit cost" type="number" min="0" value={form.material_unit_cost} onChange={(e) => setForm({ ...form, material_unit_cost: e.target.value })} />{editing && <Field label="Reason for this PO change" value={form.revision_note} onChange={(e) => setForm({ ...form, revision_note: e.target.value })} placeholder="e.g. Vendor corrected the quantity" />}<button className="primary-button compact">{editing ? "Save PO revision" : "Save PO and add stock"}</button></form>}<section className="panel table-panel">{rows.length ? <table><thead><tr><th>Vendor</th><th>PO no.</th><th>Material</th><th>Quantity</th><th>Unit</th><th>Total</th><th>Action</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td>{row.supplier_name}</td><td>{row.purchase_order_number}</td><td>{row.material_name}</td><td>{row.quantity}</td><td>{row.unit}</td><td>{money.format(row.total_amount || 0)}</td><td><button className="row-action" onClick={() => edit(row)}>Edit PO</button></td></tr>)}</tbody></table> : <div className="empty"><ClipboardList size={27} />No purchase orders created.</div>}</section></>; }
-function MaterialProcurement({ role, materials, requests, onAdd, onApprove, onRelease, onDelete }) { const [open, setOpen] = useState(false); const [form, setForm] = useState({ raw_material_id: "", quantity: "" }); const [error, setError] = useState(""); const submit = async (event) => { event.preventDefault(); const material = materials.find((item) => item.id === form.raw_material_id); if (!material || Number(form.quantity) < 1) { setError("Select a material and enter a quantity of at least 1."); return; } if (Number(form.quantity) > Number(material.stock)) { setError("Requested quantity exceeds available stock."); return; } const result = await onAdd({ ...form, quantity: Number(form.quantity), purpose: null }); if (result) { setForm({ raw_material_id: "", quantity: "" }); setError(""); setOpen(false); } }; return <><div className="module-heading"><div><h2>Material procurement</h2><p>Request available raw material. A Manager must approve before release.</p></div><button className="primary-button compact" onClick={() => setOpen(!open)}><Plus size={17} />Request material</button></div>{open && <form className="record-form panel" noValidate onSubmit={submit}><label className="field"><span>Raw material</span><select value={form.raw_material_id} onChange={(event) => { setForm({ ...form, raw_material_id: event.target.value }); setError(""); }}><option value="">Select available material</option>{materials.map((material) => <option key={material.id} value={material.id}>{material.name} — {material.stock} {material.unit}</option>)}</select></label><Field label="Quantity requested" type="number" min="1" step="1" value={form.quantity} onChange={(event) => { setForm({ ...form, quantity: event.target.value }); setError(""); }} />{error && <p className="form-error">{error}</p>}<button className="primary-button compact">Submit request</button></form>}<section className="panel table-panel">{requests.length ? <table><thead><tr><th>Material</th><th>Quantity</th><th>Status</th><th>Action</th></tr></thead><tbody>{requests.map((request) => <tr key={request.id}><td>{request.raw_materials?.name}</td><td>{request.quantity} {request.raw_materials?.unit}</td><td><b className={`status status-${request.status}`}>{request.status}</b></td><td>{request.status === "requested" && <><button className="row-action" onClick={() => onDelete(request.id)}>Delete</button>{["manager", "admin", "superadmin"].includes(role) && <button className="row-action" onClick={() => onApprove(request.id)}>Approve</button>}</>}{request.status === "approved" && <button className="row-action" onClick={() => onRelease(request.id)}>Release material</button>}</td></tr>)}</tbody></table> : <div className="empty"><Warehouse size={27} />No material requests yet.</div>}</section></>; }
-function DispatchModule({ products, rows, onDispatch }) { const [open, setOpen] = useState(false); const [error, setError] = useState(""); const [form, setForm] = useState({ product_id: "", customer_name: "", dispatch_number: "", quantity: "" }); const selected = products.find((product) => product.id === form.product_id); const submit = async (event) => { event.preventDefault(); if (!selected) { setError("Select a finished product."); return; } if (!form.customer_name.trim()) { setError("Enter the customer name."); return; } if (!Number.isInteger(Number(form.quantity)) || Number(form.quantity) < 1) { setError("Dispatch quantity must be a whole number of at least 1."); return; } if (Number(form.quantity) > Number(selected.stock)) { setError(`Only ${selected.stock} units are available for dispatch.`); return; } const saved = await onDispatch(form); if (saved) { setOpen(false); setError(""); setForm({ product_id: "", customer_name: "", dispatch_number: "", quantity: "" }); } }; return <><div className="module-heading"><div><h2>Dispatch</h2><p>Dispatch only from finished goods inventory. Quantity cannot exceed available stock.</p></div><button className="primary-button compact" onClick={() => setOpen(!open)}><Plus size={17} />Create dispatch</button></div>{open && <form className="record-form panel" noValidate onSubmit={submit}><label className="field"><span>Finished product</span><select value={form.product_id} onChange={(event) => { setForm({ ...form, product_id: event.target.value }); setError(""); }}><option value="">Select product</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name} — available: {product.stock}</option>)}</select></label><Field label="Customer" value={form.customer_name} onChange={(event) => { setForm({ ...form, customer_name: event.target.value }); setError(""); }} /><Field label="Dispatch number" value={form.dispatch_number} onChange={(event) => setForm({ ...form, dispatch_number: event.target.value })} /><Field label={`Quantity${selected ? ` (max ${selected.stock})` : ""}`} type="number" min="1" step="1" max={selected?.stock} value={form.quantity} onChange={(event) => { setForm({ ...form, quantity: event.target.value }); setError(""); }} />{error && <p className="form-error">{error}</p>}<button className="primary-button compact">Confirm dispatch</button></form>}<section className="panel table-panel">{rows.length ? <table><thead><tr><th>Finished product</th><th>Customer</th><th>Dispatch no.</th><th>Quantity</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td>{row.products?.name}</td><td>{row.customer_name}</td><td>{row.dispatch_number || "—"}</td><td>{row.quantity}</td></tr>)}</tbody></table> : <div className="empty"><PackageCheck size={27} />No dispatches recorded.</div>}</section></>; }
-function ProductionModule({ products, assignedProcess, employee, onProduce }) { const [form, setForm] = useState({ product_id: "", quantity: "", process_note: "" }); const submit = async (event) => { event.preventDefault(); await onProduce({ ...form, process_note: `${assignedProcess ? `${assignedProcess.name}: ` : ""}${form.process_note}` }); setForm({ product_id: "", quantity: "", process_note: "" }); }; if (employee?.department === "Manufacturing" && !assignedProcess) return <section className="panel"><h3>Process assignment pending</h3><p>Your manager must assign a process before you can record manufacturing output. You can still request raw material from Material Procurement.</p></section>; return <><div className="module-heading"><div><p>{assignedProcess ? `My assigned process: ${assignedProcess.name}${assignedProcess.products?.name ? ` — ${assignedProcess.products.name}` : ""}. Complete it to add finished output.` : "Complete production to add the finished output into Finished Goods inventory."}</p></div></div><form className="record-form panel" onSubmit={submit}><label className="field"><span>Finished product</span><select required value={form.product_id} onChange={(event) => setForm({ ...form, product_id: event.target.value })}><option value="">Select product</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label><Field label="Finished quantity" type="number" min="1" value={form.quantity} onChange={(event) => setForm({ ...form, quantity: event.target.value })} /><Field label="Work note" value={form.process_note} onChange={(event) => setForm({ ...form, process_note: event.target.value })} /><button className="primary-button compact">Complete process & add finished goods</button></form></>; }
-function SalesHistory({ rows }) { const [period, setPeriod] = useState("daily"); const [customer, setCustomer] = useState("all"); const now = Date.now(); const windowMs = period === "daily" ? 86400000 : period === "weekly" ? 604800000 : 2592000000; const customers = [...new Set(rows.map((row) => row.customer_name))]; const visible = rows.filter((row) => (customer === "all" || row.customer_name === customer) && now - new Date(row.created_at).getTime() <= windowMs); return <><div className="module-heading"><div><h2>Sales & customers</h2><p>Retail-style sales history generated from finished-goods dispatches.</p></div></div><div className="history-controls panel"><div className="period-tabs">{["daily", "weekly", "monthly"].map((item) => <button key={item} className={period === item ? "selected" : ""} onClick={() => setPeriod(item)}>{item}</button>)}</div><select value={customer} onChange={(event) => setCustomer(event.target.value)}><option value="all">All customers</option>{customers.map((name) => <option key={name}>{name}</option>)}</select></div><section className="panel table-panel">{visible.length ? <table><thead><tr><th>Date & time</th><th>Customer</th><th>Product</th><th>Dispatch no.</th><th>Quantity</th></tr></thead><tbody>{visible.map((row) => <tr key={row.id}><td>{new Date(row.created_at).toLocaleString("en-IN")}</td><td>{row.customer_name}</td><td>{row.products?.name}</td><td>{row.dispatch_number || "—"}</td><td>{row.quantity}</td></tr>)}</tbody></table> : <div className="empty"><BriefcaseBusiness size={27} />No sales history for this selection.</div>}</section></>; }
-function ExpenseModule({ rows, onAdd }) { const [open, setOpen] = useState(false); const [period, setPeriod] = useState("monthly"); const [form, setForm] = useState({ category: "", description: "", amount: "", recorded_at: new Date().toISOString().slice(0, 16) }); const now = Date.now(); const windowMs = period === "daily" ? 86400000 : period === "weekly" ? 604800000 : 2592000000; const visible = rows.filter((row) => now - new Date(row.recorded_at || row.created_at).getTime() <= windowMs); const submit = async (event) => { event.preventDefault(); const saved = await onAdd(form); if (saved) { setOpen(false); setForm({ category: "", description: "", amount: "", recorded_at: new Date().toISOString().slice(0, 16) }); } }; return <><div className="module-heading"><div><h2>Expenses</h2><p>Track categorized costs with an exact date and time.</p></div><button className="primary-button compact" onClick={() => setOpen(!open)}><Plus size={17} />Add expense</button></div><div className="history-controls panel"><div className="period-tabs">{["daily", "weekly", "monthly"].map((item) => <button key={item} className={period === item ? "selected" : ""} onClick={() => setPeriod(item)}>{item}</button>)}</div><strong>{money.format(visible.reduce((sum, item) => sum + Number(item.amount), 0))}</strong></div>{open && <form className="record-form panel" onSubmit={submit}><Field label="Expense category" value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} placeholder="e.g. Electricity" /><Field label="Description" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /><Field label="Amount" type="number" min="0" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} /><Field label="Date & time" type="datetime-local" value={form.recorded_at} onChange={(event) => setForm({ ...form, recorded_at: event.target.value })} /><button className="primary-button compact">Save expense</button></form>}<section className="panel table-panel">{visible.length ? <table><thead><tr><th>Date & time</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead><tbody>{visible.map((row) => <tr key={row.id}><td>{new Date(row.recorded_at || row.created_at).toLocaleString("en-IN")}</td><td>{row.category}</td><td>{row.description || "—"}</td><td>{money.format(row.amount)}</td></tr>)}</tbody></table> : <div className="empty"><ReceiptIndianRupee size={27} />No expense entries for this period.</div>}</section></>; }
-function PeopleModule({ rows, processes, onCreateLogin }) { const [open, setOpen] = useState(false); const [errors, setErrors] = useState({}); const [form, setForm] = useState({ full_name: "", email: "", password: "", department: "", role: "employee", assigned_process_id: "" }); const change = (key, value) => { setForm({ ...form, [key]: value }); setErrors({ ...errors, [key]: "" }); }; const submit = async (event) => { event.preventDefault(); const nextErrors = {}; if (!form.full_name.trim()) nextErrors.full_name = "Enter the employee's full name."; if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) nextErrors.email = "Enter a valid work email address."; if (form.password.length < 8) nextErrors.password = "Password must contain at least 8 characters."; if (!form.department) nextErrors.department = "Select a department."; if (form.department === "Manufacturing" && !form.assigned_process_id) nextErrors.assigned_process_id = "Select the employee's process."; if (Object.keys(nextErrors).length) { setErrors(nextErrors); return; } const saved = await onCreateLogin({ ...form, email: form.email.trim().toLowerCase(), assigned_process_id: form.department === "Manufacturing" ? form.assigned_process_id : null }); if (saved) { setOpen(false); setErrors({}); setForm({ full_name: "", email: "", password: "", department: "", role: "employee", assigned_process_id: "" }); } }; return <><div className="module-heading"><div><p>Create the employee’s work email and password here. They then sign in directly from the normal Sign in page. Only Manufacturing employees need a process assignment.</p></div><button className="primary-button compact" onClick={() => { setOpen(!open); setErrors({}); }}><Plus size={17} />Create employee login</button></div>{open && <form className="record-form panel" noValidate onSubmit={submit}><label className={`field ${errors.full_name ? "field-invalid" : ""}`}><span>Full name</span><input value={form.full_name} onChange={(event) => change("full_name", event.target.value)} />{errors.full_name && <small className="field-error">{errors.full_name}</small>}</label><label className={`field ${errors.email ? "field-invalid" : ""}`}><span>Work email (used to sign in)</span><input type="email" value={form.email} onChange={(event) => change("email", event.target.value)} />{errors.email && <small className="field-error">{errors.email}</small>}</label><PasswordField value={form.password} onChange={(event) => change("password", event.target.value)} placeholder="Set a temporary password" error={errors.password} /><label className={`field ${errors.department ? "field-invalid" : ""}`}><span>Department</span><select value={form.department} onChange={(event) => { change("department", event.target.value); if (event.target.value !== "Manufacturing") change("assigned_process_id", ""); }}><option value="">Select department</option>{["Manufacturing", "Marketing", "HR", "Purchase", "Accounts", "Administration"].map((department) => <option key={department}>{department}</option>)}</select>{errors.department && <small className="field-error">{errors.department}</small>}</label><label className="field"><span>ERP role</span><select value={form.role} onChange={(event) => change("role", event.target.value)}>{["employee", "manager", "admin"].map((role) => <option key={role}>{role}</option>)}</select></label>{form.department === "Manufacturing" && <label className={`field ${errors.assigned_process_id ? "field-invalid" : ""}`}><span>Assigned process</span><select value={form.assigned_process_id} onChange={(event) => change("assigned_process_id", event.target.value)}><option value="">Select process</option>{processes.map((process) => <option key={process.id} value={process.id}>{process.name}{process.products?.name ? ` — ${process.products.name}` : ""}</option>)}</select>{errors.assigned_process_id && <small className="field-error">{errors.assigned_process_id}</small>}</label>}<button className="primary-button compact">Create employee login</button></form>}<section className="panel table-panel">{rows.length ? <table><thead><tr><th>Employee</th><th>Email</th><th>Department</th><th>Assigned process</th><th>Role</th><th>Login</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id}><td>{row.full_name}</td><td>{row.email}</td><td>{row.department || "—"}</td><td>{processes.find((process) => process.id === row.assigned_process_id)?.name || "—"}</td><td>{row.role}</td><td>{row.login_status === "active" ? "Active" : "No login created"}</td></tr>)}</tbody></table> : <div className="empty"><Users size={27} />No employee accounts created.</div>}</section></>; }
-function AttendanceModule({ employee, rows, onMark }) { const [status, setStatus] = useState("present"); const mark = async () => { if (!employee) return; await onMark(status); }; const mine = employee ? rows.filter((row) => row.employee_name === employee.full_name) : rows; return <><div className="module-heading"><div><p>{employee ? "Mark today’s attendance. You can correct today’s status before the day ends." : "Your administrator must create your employee login before you can mark attendance."}</p></div>{employee && <div className="attendance-action"><select value={status} onChange={(event) => setStatus(event.target.value)}>{["present", "leave"].map((item) => <option key={item}>{item}</option>)}</select><button className="primary-button compact" onClick={mark}>Mark today’s attendance</button></div>}</div><section className="panel table-panel">{mine.length ? <table><thead><tr><th>Employee</th><th>Date</th><th>Status</th></tr></thead><tbody>{mine.map((row) => <tr key={row.id}><td>{row.employee_name}</td><td>{row.attendance_date}</td><td>{row.status}</td></tr>)}</tbody></table> : <div className="empty"><CalendarCheck size={27} />No attendance entries yet.</div>}</section></>; }
-function FinancialModule({ stats, purchaseOrders }) { const purchaseValue = purchaseOrders.reduce((total, order) => total + Number(order.total_amount), 0); return <section className="financial-grid"><Stat label="Sales recorded" value={money.format(stats.sales)} icon={<BriefcaseBusiness />} /><Stat label="Expenses recorded" value={money.format(stats.expenses)} icon={<ReceiptIndianRupee />} /><Stat label="Purchase order value" value={money.format(purchaseValue)} icon={<ClipboardList />} /><Stat label="Operating balance" value={money.format(stats.sales - stats.expenses - purchaseValue)} icon={<CircleDollarSign />} /></section>; }
+function OperationalModule({ icon, title, description, steps }) {
+  return (
+    <section className="panel operational-module">
+      <span className="module-icon">{icon}</span>
+      <h3>{title}</h3>
+      <p>{description}</p>
+      <div className="process-steps">
+        {steps.map((step, index) => (
+          <span key={step}>
+            <b>{index + 1}</b>
+            {step}
+          </span>
+        ))}
+      </div>
+    </section>
+  );
+}
+function SupportContact({ workspace }) {
+  const subject = encodeURIComponent(
+    `Manufacturer ERP support — ${workspace?.name || "workspace"}`,
+  );
+  const body = encodeURIComponent(
+    `Hello, I need help with ${workspace?.name || "my Manufacturer ERP workspace"}.`,
+  );
+  if (!workspace?.supportEmail && !workspace?.supportPhone) return null;
+  return (
+    <div className="sidebar-support">
+      <span>Need help?</span>
+      {workspace.supportEmail && (
+        <a
+          href={`mailto:${workspace.supportEmail}?subject=${subject}&body=${body}`}
+        >
+          Contact support
+        </a>
+      )}
+      {workspace.supportPhone && (
+        <a href={`tel:${workspace.supportPhone.replace(/\s/g, "")}`}>
+          {workspace.supportPhone}
+        </a>
+      )}
+    </div>
+  );
+}
+function PlatformAdmin() {
+  const [customers, setCustomers] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [eventLimit, setEventLimit] = useState(10);
+  const [selected, setSelected] = useState("");
+  const [days, setDays] = useState("30");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [message, setMessage] = useState("");
+  const load = async () => {
+    const [
+      { data: customerRows, error: customerError },
+      { data: eventRows, error: eventError },
+      { data: settingsRows, error: settingsError },
+    ] = await Promise.all([
+      supabase.rpc("get_platform_customers"),
+      supabase.rpc("get_platform_access_events"),
+      supabase.rpc("get_platform_support_settings"),
+    ]);
+    if (customerError || eventError || settingsError) {
+      setMessage((customerError || eventError || settingsError).message);
+      return;
+    }
+    setCustomers(customerRows || []);
+    setEvents(eventRows || []);
+    setEventLimit(10);
+    setContactEmail(settingsRows?.[0]?.support_email || "");
+    setContactPhone(settingsRows?.[0]?.support_phone || "");
+  };
+  useEffect(() => {
+    load();
+  }, []);
+  const renew = async () => {
+    if (!selected) {
+      setMessage("Select a customer workspace first.");
+      return;
+    }
+    const { error } = await supabase.rpc("set_customer_subscription", {
+      target_organization_id: selected,
+      access_days: Number(days),
+    });
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+    setMessage("Subscription updated successfully.");
+    load();
+  };
+  const saveSupport = async () => {
+    const { error } = await supabase.rpc("update_platform_support_settings", {
+      contact_email: contactEmail,
+      contact_phone: contactPhone,
+    });
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+    setMessage("Global support contact saved for every customer.");
+  };
+  const suspend = async () => {
+    if (!selected) return;
+    const { error } = await supabase.rpc("suspend_customer_subscription", {
+      target_organization_id: selected,
+    });
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+    setMessage("Customer access has been suspended.");
+    load();
+  };
+  const visibleEvents = events.slice(0, eventLimit);
+  return (
+    <>
+      <div className="module-heading">
+        <div>
+          <h2>Customer subscriptions</h2>
+          <p>Manage all customer access and one shared support contact.</p>
+        </div>
+      </div>
+      <section className="panel admin-controls">
+        <Field
+          label="Global support email"
+          type="email"
+          value={contactEmail}
+          onChange={(event) => setContactEmail(event.target.value)}
+        />
+        <Field
+          label="Global support phone"
+          value={contactPhone}
+          onChange={(event) => setContactPhone(event.target.value)}
+        />
+        <button className="primary-button compact" onClick={saveSupport}>
+          Save global support
+        </button>
+      </section>
+      <section className="panel admin-controls">
+        <label className="field">
+          <span>Customer workspace</span>
+          <select
+            value={selected}
+            onChange={(event) => setSelected(event.target.value)}
+          >
+            <option value="">Select customer</option>
+            {customers.map((customer) => (
+              <option
+                key={customer.organization_id}
+                value={customer.organization_id}
+              >
+                {customer.organization_name} — {customer.owner_email} —{" "}
+                {customer.status}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Field
+          label="Paid access duration (days)"
+          type="number"
+          min="1"
+          max="3650"
+          value={days}
+          onChange={(event) => setDays(event.target.value)}
+        />
+        <button className="primary-button compact" onClick={renew}>
+          Mark paid / renew
+        </button>
+        <button className="danger-button" onClick={suspend}>
+          Suspend access
+        </button>
+        {message && <p className="builder-note">{message}</p>}
+      </section>
+      <section className="panel table-panel">
+        <h3>Customer workspaces</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Company</th>
+              <th>Owner</th>
+              <th>Status</th>
+              <th>Access ends</th>
+              <th>Last renewed</th>
+            </tr>
+          </thead>
+          <tbody>
+            {customers.map((customer) => (
+              <tr key={customer.organization_id}>
+                <td>{customer.organization_name}</td>
+                <td>{customer.owner_email}</td>
+                <td>{customer.status}</td>
+                <td>
+                  {customer.access_ends_at
+                    ? new Date(customer.access_ends_at).toLocaleString("en-IN")
+                    : "—"}
+                </td>
+                <td>
+                  {customer.last_renewed_at
+                    ? new Date(customer.last_renewed_at).toLocaleString("en-IN")
+                    : "—"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+      <section className="panel table-panel">
+        <h3>Recent EXE / web access</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Date & time</th>
+              <th>Company</th>
+              <th>User</th>
+              <th>Event</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visibleEvents.map((event, index) => (
+              <tr key={`${event.occurred_at}-${index}`}>
+                <td>{new Date(event.occurred_at).toLocaleString("en-IN")}</td>
+                <td>{event.organization_name}</td>
+                <td>{event.user_email}</td>
+                <td>{event.event_type}</td>
+                <td>{event.subscription_status}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="access-pagination">
+          {events.length > eventLimit && (
+            <button
+              className="row-action"
+              onClick={() => setEventLimit((limit) => limit + 10)}
+            >
+              Show 10 more
+            </button>
+          )}
+          {eventLimit > 10 && (
+            <button className="row-action" onClick={() => setEventLimit(10)}>
+              Show less
+            </button>
+          )}
+        </div>
+      </section>
+    </>
+  );
+}
+function SubscriptionEnded({ workspace, onSignOut }) {
+  const subject = encodeURIComponent(
+    `Manufacturer ERP renewal request — ${workspace?.name || "workspace"}`,
+  );
+  const body = encodeURIComponent(
+    `Hello, I would like to renew access to ${workspace?.name || "my Manufacturer ERP workspace"}.`,
+  );
+  return (
+    <main className="subscription-blocked">
+      <Factory size={34} />
+      <p className="overline">SUBSCRIPTION REQUIRED</p>
+      <h1>Your trial or subscription has ended.</h1>
+      <p>
+        Your ERP records remain safely stored. Renew access to continue using
+        the same workspace and data.
+      </p>
+      {workspace?.supportEmail ? (
+        <a
+          className="primary-button"
+          href={`mailto:${workspace.supportEmail}?subject=${subject}&body=${body}`}
+        >
+          Contact support for renewal
+        </a>
+      ) : (
+        <p className="subscription-contact">
+          Contact your Manufacturer ERP provider to renew this workspace.
+        </p>
+      )}
+      {workspace?.supportPhone && (
+        <p className="subscription-contact">
+          Support: {workspace.supportPhone}
+        </p>
+      )}
+      <button className="subscription-signout" onClick={onSignOut}>
+        Sign out
+      </button>
+    </main>
+  );
+}
+function JobsModule({ jobs, bomItems, materials, addRecord }) {
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState("");
+  const [job, setJob] = useState({
+    job_name: "",
+    project_name: "",
+    customer_name: "",
+    design_requirements: "",
+    height: "",
+    breadth: "",
+    length: "",
+    sheet_count: "",
+  });
+  const [bom, setBom] = useState({
+    raw_material_id: "",
+    planned_quantity: "",
+    vendor_reference: "",
+  });
+  const createJob = async (event) => {
+    event.preventDefault();
+    const saved = await addRecord("jobs", {
+      ...job,
+      height: Number(job.height || 0),
+      breadth: Number(job.breadth || 0),
+      length: Number(job.length || 0),
+      sheet_count: Number(job.sheet_count || 0),
+    });
+    if (saved) {
+      setOpen(false);
+      setJob({
+        job_name: "",
+        project_name: "",
+        customer_name: "",
+        design_requirements: "",
+        height: "",
+        breadth: "",
+        length: "",
+        sheet_count: "",
+      });
+    }
+  };
+  const addBom = async (event) => {
+    event.preventDefault();
+    const material = materials.find((item) => item.id === bom.raw_material_id);
+    if (!selected || !material) return;
+    await addRecord("job_bom_items", {
+      job_id: selected,
+      raw_material_id: material.id,
+      material_name: material.name,
+      planned_quantity: Number(bom.planned_quantity),
+      unit: material.unit,
+      vendor_reference: bom.vendor_reference || null,
+    });
+    setBom({ raw_material_id: "", planned_quantity: "", vendor_reference: "" });
+  };
+  const selectedBom = bomItems.filter((item) => item.job_id === selected);
+  return (
+    <>
+      <div className="module-heading">
+        <div>
+          <p>
+            Create a job before production. Design requirements and BOM are
+            planned here; this page never changes stock.
+          </p>
+        </div>
+        <button
+          className="primary-button compact"
+          onClick={() => setOpen(!open)}
+        >
+          <Plus size={17} />
+          Create job
+        </button>
+      </div>
+      {open && (
+        <form className="record-form panel" onSubmit={createJob}>
+          <Field
+            label="Job name"
+            value={job.job_name}
+            onChange={(e) => setJob({ ...job, job_name: e.target.value })}
+          />
+          <Field
+            label="Project name"
+            value={job.project_name}
+            onChange={(e) => setJob({ ...job, project_name: e.target.value })}
+          />
+          <Field
+            label="Customer"
+            value={job.customer_name}
+            onChange={(e) => setJob({ ...job, customer_name: e.target.value })}
+          />
+          <Field
+            label="Design requirements"
+            value={job.design_requirements}
+            onChange={(e) =>
+              setJob({ ...job, design_requirements: e.target.value })
+            }
+            placeholder="Design / drawing reference"
+          />
+          <Field
+            label="Height"
+            type="number"
+            min="0"
+            value={job.height}
+            onChange={(e) => setJob({ ...job, height: e.target.value })}
+          />
+          <Field
+            label="Breadth"
+            type="number"
+            min="0"
+            value={job.breadth}
+            onChange={(e) => setJob({ ...job, breadth: e.target.value })}
+          />
+          <Field
+            label="Length"
+            type="number"
+            min="0"
+            value={job.length}
+            onChange={(e) => setJob({ ...job, length: e.target.value })}
+          />
+          <Field
+            label="No. of sheets"
+            type="number"
+            min="0"
+            value={job.sheet_count}
+            onChange={(e) => setJob({ ...job, sheet_count: e.target.value })}
+          />
+          <button className="primary-button compact">Save job</button>
+        </form>
+      )}
+      <section className="panel table-panel">
+        <h3>Jobs</h3>
+        {jobs.length ? (
+          <table>
+            <thead>
+              <tr>
+                <th>Job</th>
+                <th>Project</th>
+                <th>Customer</th>
+                <th>Requirements</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {jobs.map((item) => (
+                <tr
+                  key={item.id}
+                  className={selected === item.id ? "selected-row" : ""}
+                  onClick={() => setSelected(item.id)}
+                >
+                  <td>{item.job_name}</td>
+                  <td>{item.project_name || "—"}</td>
+                  <td>{item.customer_name || "—"}</td>
+                  <td>{item.design_requirements || "—"}</td>
+                  <td>{item.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="empty">
+            <FileBarChart size={27} />
+            No jobs created.
+          </div>
+        )}
+      </section>
+      {selected && (
+        <>
+          <form className="record-form panel" onSubmit={addBom}>
+            <label className="field">
+              <span>BOM material</span>
+              <select
+                required
+                value={bom.raw_material_id}
+                onChange={(e) =>
+                  setBom({ ...bom, raw_material_id: e.target.value })
+                }
+              >
+                <option value="">Select material from Raw Materials</option>
+                {materials.map((material) => (
+                  <option key={material.id} value={material.id}>
+                    {material.name} — available {material.stock} {material.unit}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Field
+              label="Planned quantity"
+              type="number"
+              min="0.01"
+              value={bom.planned_quantity}
+              onChange={(e) =>
+                setBom({ ...bom, planned_quantity: e.target.value })
+              }
+            />
+            <Field
+              label="Vendor reference"
+              value={bom.vendor_reference}
+              onChange={(e) =>
+                setBom({ ...bom, vendor_reference: e.target.value })
+              }
+              placeholder="Optional vendor / source"
+            />
+            <button className="primary-button compact">Add BOM item</button>
+          </form>
+          <section className="panel table-panel">
+            <h3>Selected job BOM</h3>
+            {selectedBom.length ? (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Material</th>
+                    <th>Planned quantity</th>
+                    <th>Unit</th>
+                    <th>Vendor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedBom.map((item) => (
+                    <tr key={item.id}>
+                      <td>{item.material_name}</td>
+                      <td>{item.planned_quantity}</td>
+                      <td>{item.unit}</td>
+                      <td>{item.vendor_reference || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="empty">No BOM items planned for this job.</div>
+            )}
+          </section>
+        </>
+      )}
+    </>
+  );
+}
+function PurchaseOrders({ rows, onSave }) {
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const blank = {
+    supplier: "",
+    po_number: "",
+    material: "",
+    material_code: "",
+    material_quantity: "",
+    material_unit: "",
+    material_unit_cost: "",
+    revision_note: "",
+  };
+  const [form, setForm] = useState(blank);
+  const submit = async (event) => {
+    event.preventDefault();
+    const { revision_note, ...po } = form;
+    await onSave(
+      {
+        ...po,
+        material_quantity: Number(po.material_quantity),
+        material_unit_cost: Number(po.material_unit_cost),
+        ...(editing ? { revision_note } : {}),
+      },
+      editing?.id,
+    );
+    setOpen(false);
+    setEditing(null);
+    setForm(blank);
+  };
+  const edit = (row) => {
+    setEditing(row);
+    setForm({
+      supplier: row.supplier_name || "",
+      po_number: row.purchase_order_number || "",
+      material: row.material_name || "",
+      material_code: row.material_sku || "",
+      material_quantity: row.quantity || "",
+      material_unit: row.unit || "",
+      material_unit_cost: row.unit_cost || "",
+      revision_note: "",
+    });
+    setOpen(true);
+  };
+  return (
+    <>
+      <div className="module-heading">
+        <div>
+          <p>
+            Purchase Orders are the starting point. Saving a PO immediately adds
+            its material quantity to Raw Materials inventory. Later changes
+            require a revision note and are recorded for tracking.
+          </p>
+        </div>
+        <button
+          className="primary-button compact"
+          onClick={() => {
+            setEditing(null);
+            setForm(blank);
+            setOpen(!open);
+          }}
+        >
+          <Plus size={17} />
+          Create purchase order
+        </button>
+      </div>
+      {open && (
+        <form className="record-form panel" onSubmit={submit}>
+          <Field
+            label="Vendor name"
+            value={form.supplier}
+            onChange={(e) => setForm({ ...form, supplier: e.target.value })}
+          />
+          <Field
+            label="PO number"
+            value={form.po_number}
+            onChange={(e) => setForm({ ...form, po_number: e.target.value })}
+          />
+          <Field
+            label="Raw material name"
+            value={form.material}
+            onChange={(e) => setForm({ ...form, material: e.target.value })}
+          />
+          <Field
+            label="Material SKU"
+            value={form.material_code}
+            onChange={(e) =>
+              setForm({ ...form, material_code: e.target.value })
+            }
+          />
+          <Field
+            label="Quantity"
+            type="number"
+            min="0.01"
+            value={form.material_quantity}
+            onChange={(e) =>
+              setForm({ ...form, material_quantity: e.target.value })
+            }
+          />
+          <Field
+            label="Unit"
+            type="unit"
+            value={form.material_unit}
+            onChange={(e) =>
+              setForm({ ...form, material_unit: e.target.value })
+            }
+          />
+          <Field
+            label="Unit cost"
+            type="number"
+            min="0"
+            value={form.material_unit_cost}
+            onChange={(e) =>
+              setForm({ ...form, material_unit_cost: e.target.value })
+            }
+          />
+          {editing && (
+            <Field
+              label="Reason for this PO change"
+              value={form.revision_note}
+              onChange={(e) =>
+                setForm({ ...form, revision_note: e.target.value })
+              }
+              placeholder="e.g. Vendor corrected the quantity"
+            />
+          )}
+          <button className="primary-button compact">
+            {editing ? "Save PO revision" : "Save PO and add stock"}
+          </button>
+        </form>
+      )}
+      <section className="panel table-panel">
+        {rows.length ? (
+          <table>
+            <thead>
+              <tr>
+                <th>Vendor</th>
+                <th>PO no.</th>
+                <th>Material</th>
+                <th>Quantity</th>
+                <th>Unit</th>
+                <th>Total</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.supplier_name}</td>
+                  <td>{row.purchase_order_number}</td>
+                  <td>{row.material_name}</td>
+                  <td>{row.quantity}</td>
+                  <td>{row.unit}</td>
+                  <td>{money.format(row.total_amount || 0)}</td>
+                  <td>
+                    <button className="row-action" onClick={() => edit(row)}>
+                      Edit PO
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="empty">
+            <ClipboardList size={27} />
+            No purchase orders created.
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
+function MaterialProcurement({
+  role,
+  materials,
+  requests,
+  onAdd,
+  onApprove,
+  onRelease,
+  onDelete,
+}) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ raw_material_id: "", quantity: "" });
+  const [error, setError] = useState("");
+  const submit = async (event) => {
+    event.preventDefault();
+    const material = materials.find((item) => item.id === form.raw_material_id);
+    if (!material || Number(form.quantity) < 1) {
+      setError("Select a material and enter a quantity of at least 1.");
+      return;
+    }
+    if (Number(form.quantity) > Number(material.stock)) {
+      setError("Requested quantity exceeds available stock.");
+      return;
+    }
+    const result = await onAdd({
+      ...form,
+      quantity: Number(form.quantity),
+      purpose: null,
+    });
+    if (result) {
+      setForm({ raw_material_id: "", quantity: "" });
+      setError("");
+      setOpen(false);
+    }
+  };
+  return (
+    <>
+      <div className="module-heading">
+        <div>
+          <h2>Material procurement</h2>
+          <p>
+            Request available raw material. A Manager must approve before
+            release.
+          </p>
+        </div>
+        <button
+          className="primary-button compact"
+          onClick={() => setOpen(!open)}
+        >
+          <Plus size={17} />
+          Request material
+        </button>
+      </div>
+      {open && (
+        <form className="record-form panel" noValidate onSubmit={submit}>
+          <label className="field">
+            <span>Raw material</span>
+            <select
+              value={form.raw_material_id}
+              onChange={(event) => {
+                setForm({ ...form, raw_material_id: event.target.value });
+                setError("");
+              }}
+            >
+              <option value="">Select available material</option>
+              {materials.map((material) => (
+                <option key={material.id} value={material.id}>
+                  {material.name} — {material.stock} {material.unit}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Field
+            label="Quantity requested"
+            type="number"
+            min="1"
+            step="1"
+            value={form.quantity}
+            onChange={(event) => {
+              setForm({ ...form, quantity: event.target.value });
+              setError("");
+            }}
+          />
+          {error && <p className="form-error">{error}</p>}
+          <button className="primary-button compact">Submit request</button>
+        </form>
+      )}
+      <section className="panel table-panel">
+        {requests.length ? (
+          <table>
+            <thead>
+              <tr>
+                <th>Material</th>
+                <th>Quantity</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {requests.map((request) => (
+                <tr key={request.id}>
+                  <td>{request.raw_materials?.name}</td>
+                  <td>
+                    {request.quantity} {request.raw_materials?.unit}
+                  </td>
+                  <td>
+                    <b className={`status status-${request.status}`}>
+                      {request.status}
+                    </b>
+                  </td>
+                  <td>
+                    {request.status === "requested" && (
+                      <>
+                        <button
+                          className="row-action"
+                          onClick={() => onDelete(request.id)}
+                        >
+                          Delete
+                        </button>
+                        {["manager", "admin", "superadmin"].includes(role) && (
+                          <button
+                            className="row-action"
+                            onClick={() => onApprove(request.id)}
+                          >
+                            Approve
+                          </button>
+                        )}
+                      </>
+                    )}
+                    {request.status === "approved" && (
+                      <button
+                        className="row-action"
+                        onClick={() => onRelease(request.id)}
+                      >
+                        Release material
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="empty">
+            <Warehouse size={27} />
+            No material requests yet.
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
+function DispatchModule({ products, rows, onDispatch }) {
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    product_id: "",
+    customer_name: "",
+    dispatch_number: "",
+    quantity: "",
+  });
+  const selected = products.find((product) => product.id === form.product_id);
+  const submit = async (event) => {
+    event.preventDefault();
+    if (!selected) {
+      setError("Select a finished product.");
+      return;
+    }
+    if (!form.customer_name.trim()) {
+      setError("Enter the customer name.");
+      return;
+    }
+    if (!Number.isInteger(Number(form.quantity)) || Number(form.quantity) < 1) {
+      setError("Dispatch quantity must be a whole number of at least 1.");
+      return;
+    }
+    if (Number(form.quantity) > Number(selected.stock)) {
+      setError(`Only ${selected.stock} units are available for dispatch.`);
+      return;
+    }
+    const saved = await onDispatch(form);
+    if (saved) {
+      setOpen(false);
+      setError("");
+      setForm({
+        product_id: "",
+        customer_name: "",
+        dispatch_number: "",
+        quantity: "",
+      });
+    }
+  };
+  return (
+    <>
+      <div className="module-heading">
+        <div>
+          <h2>Dispatch</h2>
+          <p>
+            Dispatch only from finished goods inventory. Quantity cannot exceed
+            available stock.
+          </p>
+        </div>
+        <button
+          className="primary-button compact"
+          onClick={() => setOpen(!open)}
+        >
+          <Plus size={17} />
+          Create dispatch
+        </button>
+      </div>
+      {open && (
+        <form className="record-form panel" noValidate onSubmit={submit}>
+          <label className="field">
+            <span>Finished product</span>
+            <select
+              value={form.product_id}
+              onChange={(event) => {
+                setForm({ ...form, product_id: event.target.value });
+                setError("");
+              }}
+            >
+              <option value="">Select product</option>
+              {products.map((product) => (
+                <option key={product.id} value={product.id}>
+                  {product.name} — available: {product.stock}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Field
+            label="Customer"
+            value={form.customer_name}
+            onChange={(event) => {
+              setForm({ ...form, customer_name: event.target.value });
+              setError("");
+            }}
+          />
+          <Field
+            label="Dispatch number"
+            value={form.dispatch_number}
+            onChange={(event) =>
+              setForm({ ...form, dispatch_number: event.target.value })
+            }
+          />
+          <Field
+            label={`Quantity${selected ? ` (max ${selected.stock})` : ""}`}
+            type="number"
+            min="1"
+            step="1"
+            max={selected?.stock}
+            value={form.quantity}
+            onChange={(event) => {
+              setForm({ ...form, quantity: event.target.value });
+              setError("");
+            }}
+          />
+          {error && <p className="form-error">{error}</p>}
+          <button className="primary-button compact">Confirm dispatch</button>
+        </form>
+      )}
+      <section className="panel table-panel">
+        {rows.length ? (
+          <table>
+            <thead>
+              <tr>
+                <th>Finished product</th>
+                <th>Customer</th>
+                <th>Dispatch no.</th>
+                <th>Quantity</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.products?.name}</td>
+                  <td>{row.customer_name}</td>
+                  <td>{row.dispatch_number || "—"}</td>
+                  <td>{row.quantity}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="empty">
+            <PackageCheck size={27} />
+            No dispatches recorded.
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
+function ProductionModule({ products, assignedProcess, employee, onProduce }) {
+  const [form, setForm] = useState({
+    product_id: "",
+    quantity: "",
+    process_note: "",
+  });
+  const submit = async (event) => {
+    event.preventDefault();
+    await onProduce({
+      ...form,
+      process_note: `${assignedProcess ? `${assignedProcess.name}: ` : ""}${form.process_note}`,
+    });
+    setForm({ product_id: "", quantity: "", process_note: "" });
+  };
+  if (employee?.department === "Manufacturing" && !assignedProcess)
+    return (
+      <section className="panel">
+        <h3>Process assignment pending</h3>
+        <p>
+          Your manager must assign a process before you can record manufacturing
+          output. You can still request raw material from Material Procurement.
+        </p>
+      </section>
+    );
+  return (
+    <>
+      <div className="module-heading">
+        <div>
+          <p>
+            {assignedProcess
+              ? `My assigned process: ${assignedProcess.name}${assignedProcess.products?.name ? ` — ${assignedProcess.products.name}` : ""}. Complete it to add finished output.`
+              : "Complete production to add the finished output into Finished Goods inventory."}
+          </p>
+        </div>
+      </div>
+      <form className="record-form panel" onSubmit={submit}>
+        <label className="field">
+          <span>Finished product</span>
+          <select
+            required
+            value={form.product_id}
+            onChange={(event) =>
+              setForm({ ...form, product_id: event.target.value })
+            }
+          >
+            <option value="">Select product</option>
+            {products.map((product) => (
+              <option key={product.id} value={product.id}>
+                {product.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Field
+          label="Finished quantity"
+          type="number"
+          min="1"
+          value={form.quantity}
+          onChange={(event) =>
+            setForm({ ...form, quantity: event.target.value })
+          }
+        />
+        <Field
+          label="Work note"
+          value={form.process_note}
+          onChange={(event) =>
+            setForm({ ...form, process_note: event.target.value })
+          }
+        />
+        <button className="primary-button compact">
+          Complete process & add finished goods
+        </button>
+      </form>
+    </>
+  );
+}
+function SalesHistory({ rows }) {
+  const [period, setPeriod] = useState("daily");
+  const [customer, setCustomer] = useState("all");
+  const now = Date.now();
+  const windowMs =
+    period === "daily"
+      ? 86400000
+      : period === "weekly"
+        ? 604800000
+        : 2592000000;
+  const customers = [...new Set(rows.map((row) => row.customer_name))];
+  const visible = rows.filter(
+    (row) =>
+      (customer === "all" || row.customer_name === customer) &&
+      now - new Date(row.created_at).getTime() <= windowMs,
+  );
+  return (
+    <>
+      <div className="module-heading">
+        <div>
+          <h2>Sales & customers</h2>
+          <p>
+            Retail-style sales history generated from finished-goods dispatches.
+          </p>
+        </div>
+      </div>
+      <div className="history-controls panel">
+        <div className="period-tabs">
+          {["daily", "weekly", "monthly"].map((item) => (
+            <button
+              key={item}
+              className={period === item ? "selected" : ""}
+              onClick={() => setPeriod(item)}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+        <select
+          value={customer}
+          onChange={(event) => setCustomer(event.target.value)}
+        >
+          <option value="all">All customers</option>
+          {customers.map((name) => (
+            <option key={name}>{name}</option>
+          ))}
+        </select>
+      </div>
+      <section className="panel table-panel">
+        {visible.length ? (
+          <table>
+            <thead>
+              <tr>
+                <th>Date & time</th>
+                <th>Customer</th>
+                <th>Product</th>
+                <th>Dispatch no.</th>
+                <th>Quantity</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((row) => (
+                <tr key={row.id}>
+                  <td>{new Date(row.created_at).toLocaleString("en-IN")}</td>
+                  <td>{row.customer_name}</td>
+                  <td>{row.products?.name}</td>
+                  <td>{row.dispatch_number || "—"}</td>
+                  <td>{row.quantity}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="empty">
+            <BriefcaseBusiness size={27} />
+            No sales history for this selection.
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
+function ExpenseModule({ rows, onAdd }) {
+  const [open, setOpen] = useState(false);
+  const [period, setPeriod] = useState("monthly");
+  const [form, setForm] = useState({
+    category: "",
+    description: "",
+    amount: "",
+    recorded_at: new Date().toISOString().slice(0, 16),
+  });
+  const now = Date.now();
+  const windowMs =
+    period === "daily"
+      ? 86400000
+      : period === "weekly"
+        ? 604800000
+        : 2592000000;
+  const visible = rows.filter(
+    (row) =>
+      now - new Date(row.recorded_at || row.created_at).getTime() <= windowMs,
+  );
+  const submit = async (event) => {
+    event.preventDefault();
+    const saved = await onAdd(form);
+    if (saved) {
+      setOpen(false);
+      setForm({
+        category: "",
+        description: "",
+        amount: "",
+        recorded_at: new Date().toISOString().slice(0, 16),
+      });
+    }
+  };
+  return (
+    <>
+      <div className="module-heading">
+        <div>
+          <h2>Expenses</h2>
+          <p>Track categorized costs with an exact date and time.</p>
+        </div>
+        <button
+          className="primary-button compact"
+          onClick={() => setOpen(!open)}
+        >
+          <Plus size={17} />
+          Add expense
+        </button>
+      </div>
+      <div className="history-controls panel">
+        <div className="period-tabs">
+          {["daily", "weekly", "monthly"].map((item) => (
+            <button
+              key={item}
+              className={period === item ? "selected" : ""}
+              onClick={() => setPeriod(item)}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+        <strong>
+          {money.format(
+            visible.reduce((sum, item) => sum + Number(item.amount), 0),
+          )}
+        </strong>
+      </div>
+      {open && (
+        <form className="record-form panel" onSubmit={submit}>
+          <Field
+            label="Expense category"
+            value={form.category}
+            onChange={(event) =>
+              setForm({ ...form, category: event.target.value })
+            }
+            placeholder="e.g. Electricity"
+          />
+          <Field
+            label="Description"
+            value={form.description}
+            onChange={(event) =>
+              setForm({ ...form, description: event.target.value })
+            }
+          />
+          <Field
+            label="Amount"
+            type="number"
+            min="0"
+            value={form.amount}
+            onChange={(event) =>
+              setForm({ ...form, amount: event.target.value })
+            }
+          />
+          <Field
+            label="Date & time"
+            type="datetime-local"
+            value={form.recorded_at}
+            onChange={(event) =>
+              setForm({ ...form, recorded_at: event.target.value })
+            }
+          />
+          <button className="primary-button compact">Save expense</button>
+        </form>
+      )}
+      <section className="panel table-panel">
+        {visible.length ? (
+          <table>
+            <thead>
+              <tr>
+                <th>Date & time</th>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    {new Date(row.recorded_at || row.created_at).toLocaleString(
+                      "en-IN",
+                    )}
+                  </td>
+                  <td>{row.category}</td>
+                  <td>{row.description || "—"}</td>
+                  <td>{money.format(row.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="empty">
+            <ReceiptIndianRupee size={27} />
+            No expense entries for this period.
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
+function PeopleModule({ rows, processes, onCreateLogin }) {
+  const [open, setOpen] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [form, setForm] = useState({
+    full_name: "",
+    email: "",
+    password: "",
+    department: "",
+    role: "employee",
+    assigned_process_id: "",
+  });
+  const uniqueProcesses = [
+    ...new Map(
+      processes.map((process) => [
+        `${process.product_id}:${process.name.trim().toLowerCase()}`,
+        process,
+      ]),
+    ).values(),
+  ];
+  const change = (key, value) => {
+    setForm({ ...form, [key]: value });
+    setErrors({ ...errors, [key]: "" });
+  };
+  const submit = async (event) => {
+    event.preventDefault();
+    const nextErrors = {};
+    if (!form.full_name.trim())
+      nextErrors.full_name = "Enter the employee's full name.";
+    if (!/^\S+@\S+\.\S+$/.test(form.email.trim()))
+      nextErrors.email = "Enter a valid work email address.";
+    if (form.password.length < 8)
+      nextErrors.password = "Password must contain at least 8 characters.";
+    if (!form.department) nextErrors.department = "Select a department.";
+    if (form.department === "Manufacturing" && !form.assigned_process_id)
+      nextErrors.assigned_process_id = "Select the employee's process.";
+    if (Object.keys(nextErrors).length) {
+      setErrors(nextErrors);
+      return;
+    }
+    const saved = await onCreateLogin({
+      ...form,
+      email: form.email.trim().toLowerCase(),
+      assigned_process_id:
+        form.department === "Manufacturing" ? form.assigned_process_id : null,
+    });
+    if (saved) {
+      setOpen(false);
+      setErrors({});
+      setForm({
+        full_name: "",
+        email: "",
+        password: "",
+        department: "",
+        role: "employee",
+        assigned_process_id: "",
+      });
+    }
+  };
+  return (
+    <>
+      <div className="module-heading">
+        <div>
+          <p>
+            Create the employee’s work email and password here. They then sign
+            in directly from the normal Sign in page. Only Manufacturing
+            employees need a process assignment.
+          </p>
+        </div>
+        <button
+          className="primary-button compact"
+          onClick={() => {
+            setOpen(!open);
+            setErrors({});
+          }}
+        >
+          <Plus size={17} />
+          Create employee login
+        </button>
+      </div>
+      {open && (
+        <form className="record-form panel" noValidate onSubmit={submit}>
+          <label className={`field ${errors.full_name ? "field-invalid" : ""}`}>
+            <span>Full name</span>
+            <input
+              value={form.full_name}
+              onChange={(event) => change("full_name", event.target.value)}
+            />
+            {errors.full_name && (
+              <small className="field-error">{errors.full_name}</small>
+            )}
+          </label>
+          <label className={`field ${errors.email ? "field-invalid" : ""}`}>
+            <span>Work email (used to sign in)</span>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(event) => change("email", event.target.value)}
+            />
+            {errors.email && (
+              <small className="field-error">{errors.email}</small>
+            )}
+          </label>
+          <PasswordField
+            value={form.password}
+            onChange={(event) => change("password", event.target.value)}
+            placeholder="Set a temporary password"
+            error={errors.password}
+          />
+          <label
+            className={`field ${errors.department ? "field-invalid" : ""}`}
+          >
+            <span>Department</span>
+            <select
+              value={form.department}
+              onChange={(event) => {
+                change("department", event.target.value);
+                if (event.target.value !== "Manufacturing")
+                  change("assigned_process_id", "");
+              }}
+            >
+              <option value="">Select department</option>
+              {[
+                "Manufacturing",
+                "Marketing",
+                "HR",
+                "Purchase",
+                "Accounts",
+                "Administration",
+              ].map((department) => (
+                <option key={department}>{department}</option>
+              ))}
+            </select>
+            {errors.department && (
+              <small className="field-error">{errors.department}</small>
+            )}
+          </label>
+          <label className="field">
+            <span>ERP role</span>
+            <select
+              value={form.role}
+              onChange={(event) => change("role", event.target.value)}
+            >
+              {["employee", "manager", "admin"].map((role) => (
+                <option key={role}>{role}</option>
+              ))}
+            </select>
+          </label>
+          {form.department === "Manufacturing" && (
+            <label
+              className={`field ${errors.assigned_process_id ? "field-invalid" : ""}`}
+            >
+              <span>Assigned process</span>
+              <select
+                value={form.assigned_process_id}
+                onChange={(event) =>
+                  change("assigned_process_id", event.target.value)
+                }
+              >
+                <option value="">Select process</option>
+                {uniqueProcesses.map((process) => (
+                  <option key={process.id} value={process.id}>
+                    {process.name}
+                    {process.products?.name
+                      ? ` — ${process.products.name}`
+                      : ""}
+                  </option>
+                ))}
+              </select>
+              {errors.assigned_process_id && (
+                <small className="field-error">
+                  {errors.assigned_process_id}
+                </small>
+              )}
+            </label>
+          )}
+          <button className="primary-button compact">
+            Create employee login
+          </button>
+        </form>
+      )}
+      <section className="panel table-panel">
+        {rows.length ? (
+          <table>
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Email</th>
+                <th>Department</th>
+                <th>Assigned process</th>
+                <th>Role</th>
+                <th>Login</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.full_name}</td>
+                  <td>{row.email}</td>
+                  <td>{row.department || "—"}</td>
+                  <td>
+                    {processes.find(
+                      (process) => process.id === row.assigned_process_id,
+                    )?.name || "—"}
+                  </td>
+                  <td>{row.role}</td>
+                  <td>
+                    {row.login_status === "active"
+                      ? "Active"
+                      : "No login created"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="empty">
+            <Users size={27} />
+            No employee accounts created.
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
+function AttendanceModule({ employee, rows, onMark }) {
+  const [status, setStatus] = useState("present");
+  const mark = async () => {
+    if (!employee) return;
+    await onMark(status);
+  };
+  const mine = employee
+    ? rows.filter((row) => row.employee_name === employee.full_name)
+    : rows;
+  return (
+    <>
+      <div className="module-heading">
+        <div>
+          <p>
+            {employee
+              ? "Mark today’s attendance. You can correct today’s status before the day ends."
+              : "Your administrator must create your employee login before you can mark attendance."}
+          </p>
+        </div>
+        {employee && (
+          <div className="attendance-action">
+            <select
+              value={status}
+              onChange={(event) => setStatus(event.target.value)}
+            >
+              {["present", "leave"].map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+            <button className="primary-button compact" onClick={mark}>
+              Mark today’s attendance
+            </button>
+          </div>
+        )}
+      </div>
+      <section className="panel table-panel">
+        {mine.length ? (
+          <table>
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {mine.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.employee_name}</td>
+                  <td>{row.attendance_date}</td>
+                  <td>{row.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="empty">
+            <CalendarCheck size={27} />
+            No attendance entries yet.
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
+function FinancialModule({ stats, purchaseOrders }) {
+  const purchaseValue = purchaseOrders.reduce(
+    (total, order) => total + Number(order.total_amount),
+    0,
+  );
+  return (
+    <section className="financial-grid">
+      <Stat
+        label="Sales recorded"
+        value={money.format(stats.sales)}
+        icon={<BriefcaseBusiness />}
+      />
+      <Stat
+        label="Expenses recorded"
+        value={money.format(stats.expenses)}
+        icon={<ReceiptIndianRupee />}
+      />
+      <Stat
+        label="Purchase order value"
+        value={money.format(purchaseValue)}
+        icon={<ClipboardList />}
+      />
+      <Stat
+        label="Operating balance"
+        value={money.format(stats.sales - stats.expenses - purchaseValue)}
+        icon={<CircleDollarSign />}
+      />
+    </section>
+  );
+}
 function ProcessBuilder({ products, onAddProduct, onSavePlan }) {
   const [productId, setProductId] = useState("");
   const [newProduct, setNewProduct] = useState("");
@@ -197,23 +2591,278 @@ function ProcessBuilder({ products, onAddProduct, onSavePlan }) {
   function setCount(value) {
     const count = Math.max(1, Math.min(50, Number(value) || 1));
     setStepCount(count);
-    setSteps((current) => Array.from({ length: count }, (_, index) => current[index] || { name: "" }));
+    setSteps((current) =>
+      Array.from(
+        { length: count },
+        (_, index) => current[index] || { name: "" },
+      ),
+    );
   }
-  function updateStep(index, patch) { setSteps((current) => current.map((step, stepIndex) => stepIndex === index ? { ...step, ...patch } : step)); }
+  function updateStep(index, patch) {
+    setSteps((current) =>
+      current.map((step, stepIndex) =>
+        stepIndex === index ? { ...step, ...patch } : step,
+      ),
+    );
+  }
   async function save() {
     if (saving) return;
-    if (!productId && !newProduct.trim()) { setMessage("Choose an existing product or create a new product first."); return; }
-    if (steps.some((step) => !step.name.trim())) { setMessage("Give every process step a name."); return; }
-    setSaving(true); setMessage("Saving process plan…");
+    if (!productId && !newProduct.trim()) {
+      setMessage("Choose an existing product or create a new product first.");
+      return;
+    }
+    if (steps.some((step) => !step.name.trim())) {
+      setMessage("Give every process step a name.");
+      return;
+    }
+    setSaving(true);
+    setMessage("Saving process plan…");
     let id = productId;
-    if (!id) { const product = await onAddProduct({ name: newProduct.trim(), stock: 0, price: 0 }); if (!product) { setMessage("Could not create the product."); setSaving(false); return; } id = product.id; }
+    if (!id) {
+      const product = await onAddProduct({
+        name: newProduct.trim(),
+        stock: 0,
+        price: 0,
+      });
+      if (!product) {
+        setMessage("Could not create the product.");
+        setSaving(false);
+        return;
+      }
+      id = product.id;
+    }
     const saved = await onSavePlan(id, steps, materialMode);
-    if (saved) { setMessage("Product process plan saved successfully."); setProductId(""); setNewProduct(""); setCount(1); setSteps([{ name: "" }]); }
-    else setMessage("Could not save the process plan. Please try again.");
+    if (saved) {
+      setMessage("Product process plan saved successfully.");
+      setProductId("");
+      setNewProduct("");
+      setCount(1);
+      setSteps([{ name: "" }]);
+    } else setMessage("Could not save the process plan. Please try again.");
     setSaving(false);
   }
-  const visibleSteps = steps.slice(0, visibleStepCount); return <section className="panel process-builder"><span className="module-icon"><Wrench /></span><h3>Product process builder</h3><p>Set a product’s number of processes, name each process, then choose one material-fetch rule for the whole product.</p><div className="builder-fields"><label className="field"><span>Existing finished product</span><select value={productId} onChange={(event) => { setProductId(event.target.value); setNewProduct(""); }}><option value="">Create a new product below</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label><Field label="New product name" value={newProduct} onChange={(event) => { setNewProduct(event.target.value); setProductId(""); }} placeholder="e.g. Precision gear" /><label className="field"><span>Number of processes</span><select value={stepCount} onChange={(event) => setCount(event.target.value)}>{Array.from({ length: 50 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}</select></label></div><div className="fetch-options"><button type="button" className={materialMode === "automatic" ? "selected" : ""} onClick={() => setMaterialMode("automatic")}><strong>Automatic material fetch</strong><span>Apply automatic inventory material fetching for this product.</span></button><button type="button" className={materialMode === "manual" ? "selected" : ""} onClick={() => setMaterialMode("manual")}><strong>Manual material fetch</strong><span>Require manual issue of materials for this product.</span></button></div><div className="process-step-editor">{visibleSteps.map((step, index) => <div className="step-editor" key={index}><strong>Process {index + 1}</strong><Field label="Process name" value={step.name} onChange={(event) => updateStep(index, { name: event.target.value })} placeholder="e.g. CNC machining" /></div>)}</div>{steps.length > visibleStepCount && <button type="button" className="row-action process-more" onClick={() => setVisibleStepCount((count) => count + 12)}>Show more processes</button>}{visibleStepCount > 12 && <button type="button" className="row-action process-less" onClick={() => setVisibleStepCount(12)}>Show less</button>}<button type="button" className="primary-button compact builder-save" onClick={save}>Save product process plan</button>{message && <p className="builder-note">{message}</p>}</section>;
+  const visibleSteps = steps.slice(0, visibleStepCount);
+  return (
+    <section className="panel process-builder">
+      <span className="module-icon">
+        <Wrench />
+      </span>
+      <h3>Product process builder</h3>
+      <p>
+        Set a product’s number of processes, name each process, then choose one
+        material-fetch rule for the whole product.
+      </p>
+      <div className="builder-fields">
+        <label className="field">
+          <span>Existing finished product</span>
+          <select
+            value={productId}
+            onChange={(event) => {
+              setProductId(event.target.value);
+              setNewProduct("");
+            }}
+          >
+            <option value="">Create a new product below</option>
+            {products.map((product) => (
+              <option key={product.id} value={product.id}>
+                {product.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Field
+          label="New product name"
+          value={newProduct}
+          onChange={(event) => {
+            setNewProduct(event.target.value);
+            setProductId("");
+          }}
+          placeholder="e.g. Precision gear"
+        />
+        <label className="field">
+          <span>Number of processes</span>
+          <select
+            value={stepCount}
+            onChange={(event) => setCount(event.target.value)}
+          >
+            {Array.from({ length: 50 }, (_, index) => (
+              <option key={index + 1} value={index + 1}>
+                {index + 1}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="fetch-options">
+        <button
+          type="button"
+          className={materialMode === "automatic" ? "selected" : ""}
+          onClick={() => setMaterialMode("automatic")}
+        >
+          <strong>Automatic material fetch</strong>
+          <span>
+            Apply automatic inventory material fetching for this product.
+          </span>
+        </button>
+        <button
+          type="button"
+          className={materialMode === "manual" ? "selected" : ""}
+          onClick={() => setMaterialMode("manual")}
+        >
+          <strong>Manual material fetch</strong>
+          <span>Require manual issue of materials for this product.</span>
+        </button>
+      </div>
+      <div className="process-step-editor">
+        {visibleSteps.map((step, index) => (
+          <div className="step-editor" key={index}>
+            <strong>Process {index + 1}</strong>
+            <Field
+              label="Process name"
+              value={step.name}
+              onChange={(event) =>
+                updateStep(index, { name: event.target.value })
+              }
+              placeholder="e.g. CNC machining"
+            />
+          </div>
+        ))}
+      </div>
+      {steps.length > visibleStepCount && (
+        <button
+          type="button"
+          className="row-action process-more"
+          onClick={() => setVisibleStepCount((count) => count + 12)}
+        >
+          Show more processes
+        </button>
+      )}
+      {visibleStepCount > 12 && (
+        <button
+          type="button"
+          className="row-action process-less"
+          onClick={() => setVisibleStepCount(12)}
+        >
+          Show less
+        </button>
+      )}
+      <button
+        type="button"
+        className="primary-button compact builder-save"
+        onClick={save}
+      >
+        Save product process plan
+      </button>
+      {message && <p className="builder-note">{message}</p>}
+    </section>
+  );
 }
 
-function Stat({ label, value, icon }) { return <section className="stat"><span>{icon}</span><p>{label}</p><strong>{value}</strong></section>; }
-function RecordModule({ title, sectionTitle, description, actionLabel = "Add record", rows, empty, fields, onAdd, columns, readOnly = false, action }) { const [open, setOpen] = useState(false); const [form, setForm] = useState({}); const submit = async (event) => { event.preventDefault(); const saved = await onAdd(form); if (saved) { setOpen(false); setForm({}); } }; return <><div className="module-heading"><div><h2>{title}</h2>{sectionTitle && <h3 className="section-title">{sectionTitle}</h3>}<p>{description || (readOnly ? "View-only access. Contact a manager to request material changes." : "Stored securely in your Supabase workspace.")}</p></div>{!readOnly && <button className="primary-button compact" onClick={() => setOpen(!open)}><Plus size={17} />{actionLabel}</button>}</div>{open && <form className="record-form panel" onSubmit={submit}>{fields.map(([key, label, type = "text"]) => <Field key={key} label={label} type={type} value={form[key] || ""} onChange={(e) => setForm({ ...form, [key]: e.target.value })} />)}<button className="primary-button compact">Save record</button></form>}<section className="panel table-panel">{rows.length ? <table><thead><tr>{columns.map((column) => <th key={column}>{column.replaceAll("_", " ")}</th>)}{action && <th>Action</th>}</tr></thead><tbody>{rows.map((row) => <tr key={row.id}>{columns.map((column) => <td key={column}>{column.includes("price") || column.includes("cost") || column.includes("total") || column === "amount" ? money.format(row[column] || 0) : row[column] || "—"}</td>)}{action && <td>{action(row)}</td>}</tr>)}</tbody></table> : <div className="empty"><Boxes size={27} />{empty}</div>}</section></>; }
+function Stat({ label, value, icon }) {
+  return (
+    <section className="stat">
+      <span>{icon}</span>
+      <p>{label}</p>
+      <strong>{value}</strong>
+    </section>
+  );
+}
+function RecordModule({
+  title,
+  sectionTitle,
+  description,
+  actionLabel = "Add record",
+  rows,
+  empty,
+  fields,
+  onAdd,
+  columns,
+  readOnly = false,
+  action,
+}) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({});
+  const submit = async (event) => {
+    event.preventDefault();
+    const saved = await onAdd(form);
+    if (saved) {
+      setOpen(false);
+      setForm({});
+    }
+  };
+  return (
+    <>
+      <div className="module-heading">
+        <div>
+          <h2>{title}</h2>
+          {sectionTitle && <h3 className="section-title">{sectionTitle}</h3>}
+          <p>
+            {description ||
+              (readOnly
+                ? "View-only access. Contact a manager to request material changes."
+                : "Stored securely in your Supabase workspace.")}
+          </p>
+        </div>
+        {!readOnly && (
+          <button
+            className="primary-button compact"
+            onClick={() => setOpen(!open)}
+          >
+            <Plus size={17} />
+            {actionLabel}
+          </button>
+        )}
+      </div>
+      {open && (
+        <form className="record-form panel" onSubmit={submit}>
+          {fields.map(([key, label, type = "text"]) => (
+            <Field
+              key={key}
+              label={label}
+              type={type}
+              value={form[key] || ""}
+              onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+            />
+          ))}
+          <button className="primary-button compact">Save record</button>
+        </form>
+      )}
+      <section className="panel table-panel">
+        {rows.length ? (
+          <table>
+            <thead>
+              <tr>
+                {columns.map((column) => (
+                  <th key={column}>{column.replaceAll("_", " ")}</th>
+                ))}
+                {action && <th>Action</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  {columns.map((column) => (
+                    <td key={column}>
+                      {column.includes("price") ||
+                      column.includes("cost") ||
+                      column.includes("total") ||
+                      column === "amount"
+                        ? money.format(row[column] || 0)
+                        : row[column] || "—"}
+                    </td>
+                  ))}
+                  {action && <td>{action(row)}</td>}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="empty">
+            <Boxes size={27} />
+            {empty}
+          </div>
+        )}
+      </section>
+    </>
+  );
+}
