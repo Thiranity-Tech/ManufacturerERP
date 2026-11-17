@@ -1494,6 +1494,7 @@ function JobsModule({ jobs, bomItems, materials, addRecord }) {
 function PurchaseOrders({ rows, onSave }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [formError, setFormError] = useState("");
   const blank = {
     supplier: "",
     po_number: "",
@@ -1507,19 +1508,31 @@ function PurchaseOrders({ rows, onSave }) {
   const [form, setForm] = useState(blank);
   const submit = async (event) => {
     event.preventDefault();
+    if (Number(form.material_quantity) <= 0) {
+      setFormError("Quantity must be greater than zero.");
+      return;
+    }
+    if (Number(form.material_unit_cost) < 0 || form.material_unit_cost === "") {
+      setFormError("Enter the unit cost.");
+      return;
+    }
+    setFormError("");
     const { revision_note, ...po } = form;
-    await onSave(
+    const saved = await onSave(
       {
         ...po,
+        material_code: "",
         material_quantity: Number(po.material_quantity),
         material_unit_cost: Number(po.material_unit_cost),
         ...(editing ? { revision_note } : {}),
       },
       editing?.id,
     );
-    setOpen(false);
-    setEditing(null);
-    setForm(blank);
+    if (saved) {
+      setOpen(false);
+      setEditing(null);
+      setForm(blank);
+    }
   };
   const edit = (row) => {
     setEditing(row);
@@ -1527,7 +1540,7 @@ function PurchaseOrders({ rows, onSave }) {
       supplier: row.supplier_name || "",
       po_number: row.purchase_order_number || "",
       material: row.material_name || "",
-      material_code: row.material_sku || "",
+      material_code: "",
       material_quantity: row.quantity || "",
       material_unit: row.unit || "",
       material_unit_cost: row.unit_cost || "",
@@ -1575,13 +1588,6 @@ function PurchaseOrders({ rows, onSave }) {
             onChange={(e) => setForm({ ...form, material: e.target.value })}
           />
           <Field
-            label="Material SKU"
-            value={form.material_code}
-            onChange={(e) =>
-              setForm({ ...form, material_code: e.target.value })
-            }
-          />
-          <Field
             label="Quantity"
             type="number"
             value={form.material_quantity}
@@ -1615,6 +1621,7 @@ function PurchaseOrders({ rows, onSave }) {
               placeholder="e.g. Vendor corrected the quantity"
             />
           )}
+          {formError && <p className="form-error">{formError}</p>}
           <button className="primary-button compact">
             {editing ? "Save PO revision" : "Save PO and add stock"}
           </button>
