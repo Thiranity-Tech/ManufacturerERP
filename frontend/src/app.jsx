@@ -330,7 +330,7 @@ function Field({ label, type = "text", ...props }) {
   return (
     <label className="field">
       <span>{label}</span>
-      <input required type={type} {...props} />
+      <input required type={type} {...(type === "number" ? { step: "any" } : {})} {...props} />
     </label>
   );
 }
@@ -1134,8 +1134,6 @@ function PlatformAdmin() {
         <Field
           label="Paid access duration (days)"
           type="number"
-          min="1"
-          max="3650"
           value={days}
           onChange={(event) => setDays(event.target.value)}
         />
@@ -1363,28 +1361,24 @@ function JobsModule({ jobs, bomItems, materials, addRecord }) {
           <Field
             label="Height"
             type="number"
-            min="0"
             value={job.height}
             onChange={(e) => setJob({ ...job, height: e.target.value })}
           />
           <Field
             label="Breadth"
             type="number"
-            min="0"
             value={job.breadth}
             onChange={(e) => setJob({ ...job, breadth: e.target.value })}
           />
           <Field
             label="Length"
             type="number"
-            min="0"
             value={job.length}
             onChange={(e) => setJob({ ...job, length: e.target.value })}
           />
           <Field
             label="No. of sheets"
             type="number"
-            min="0"
             value={job.sheet_count}
             onChange={(e) => setJob({ ...job, sheet_count: e.target.value })}
           />
@@ -1450,8 +1444,6 @@ function JobsModule({ jobs, bomItems, materials, addRecord }) {
             <Field
               label="Planned quantity"
               type="number"
-              min="0.01"
-              step="0.01"
               value={bom.planned_quantity}
               onChange={(e) =>
                 setBom({ ...bom, planned_quantity: e.target.value })
@@ -1592,8 +1584,6 @@ function PurchaseOrders({ rows, onSave }) {
           <Field
             label="Quantity"
             type="number"
-            min="0.01"
-            step="0.01"
             value={form.material_quantity}
             onChange={(e) =>
               setForm({ ...form, material_quantity: e.target.value })
@@ -1610,7 +1600,6 @@ function PurchaseOrders({ rows, onSave }) {
           <Field
             label="Unit cost"
             type="number"
-            min="0"
             value={form.material_unit_cost}
             onChange={(e) =>
               setForm({ ...form, material_unit_cost: e.target.value })
@@ -1688,8 +1677,8 @@ function MaterialProcurement({
   const submit = async (event) => {
     event.preventDefault();
     const material = materials.find((item) => item.id === form.raw_material_id);
-    if (!material || Number(form.quantity) < 1) {
-      setError("Select a material and enter a quantity of at least 1.");
+    if (!material || !Number.isFinite(Number(form.quantity)) || Number(form.quantity) <= 0) {
+      setError("Select a material and enter a quantity greater than zero.");
       return;
     }
     if (Number(form.quantity) > Number(material.stock)) {
@@ -1747,8 +1736,6 @@ function MaterialProcurement({
           <Field
             label="Quantity requested"
             type="number"
-            min="1"
-            step="1"
             value={form.quantity}
             onChange={(event) => {
               setForm({ ...form, quantity: event.target.value });
@@ -1844,8 +1831,8 @@ function DispatchModule({ products, rows, onDispatch }) {
       setError("Enter the customer name.");
       return;
     }
-    if (!Number.isInteger(Number(form.quantity)) || Number(form.quantity) < 1) {
-      setError("Dispatch quantity must be a whole number of at least 1.");
+    if (!Number.isFinite(Number(form.quantity)) || Number(form.quantity) <= 0) {
+      setError("Dispatch quantity must be greater than zero.");
       return;
     }
     if (Number(form.quantity) > Number(selected.stock)) {
@@ -1919,9 +1906,6 @@ function DispatchModule({ products, rows, onDispatch }) {
           <Field
             label={`Quantity${selected ? ` (max ${selected.stock})` : ""}`}
             type="number"
-            min="1"
-            step="1"
-            max={selected?.stock}
             value={form.quantity}
             onChange={(event) => {
               setForm({ ...form, quantity: event.target.value });
@@ -2020,7 +2004,6 @@ function ProductionModule({ products, assignedProcess, employee, onProduce }) {
         <Field
           label="Finished quantity"
           type="number"
-          min="1"
           value={form.quantity}
           onChange={(event) =>
             setForm({ ...form, quantity: event.target.value })
@@ -2208,7 +2191,6 @@ function ExpenseModule({ rows, onAdd }) {
           <Field
             label="Amount"
             type="number"
-            min="0"
             value={form.amount}
             onChange={(event) =>
               setForm({ ...form, amount: event.target.value })
