@@ -1522,7 +1522,6 @@ function PurchaseOrders({ rows, onSave }) {
     material_quantity: "",
     material_unit: "",
     material_unit_cost: "",
-    revision_note: "",
   };
   const [form, setForm] = useState(blank);
   const submit = async (event) => {
@@ -1536,14 +1535,13 @@ function PurchaseOrders({ rows, onSave }) {
       return;
     }
     setFormError("");
-    const { revision_note, ...po } = form;
+    const po = form;
     const saved = await onSave(
       {
         ...po,
         material_code: "",
         material_quantity: Number(po.material_quantity),
         material_unit_cost: Number(po.material_unit_cost),
-        ...(editing ? { revision_note } : {}),
       },
       editing?.id,
     );
@@ -1563,7 +1561,6 @@ function PurchaseOrders({ rows, onSave }) {
       material_quantity: row.quantity || "",
       material_unit: row.unit || "",
       material_unit_cost: row.unit_cost || "",
-      revision_note: "",
     });
     setOpen(true);
   };
@@ -1574,7 +1571,7 @@ function PurchaseOrders({ rows, onSave }) {
           <p>
             Purchase Orders are the starting point. Saving a PO immediately adds
             its material quantity to Raw Materials inventory. Later changes
-            require a revision note and are recorded for tracking.
+            update Raw Materials inventory automatically.
           </p>
         </div>
         <button
@@ -1630,19 +1627,9 @@ function PurchaseOrders({ rows, onSave }) {
               setForm({ ...form, material_unit_cost: e.target.value })
             }
           />
-          {editing && (
-            <Field
-              label="Reason for this PO change"
-              value={form.revision_note}
-              onChange={(e) =>
-                setForm({ ...form, revision_note: e.target.value })
-              }
-              placeholder="e.g. Vendor corrected the quantity"
-            />
-          )}
           {formError && <p className="form-error">{formError}</p>}
           <button className="primary-button compact">
-            {editing ? "Save PO revision" : "Save PO and add stock"}
+            {editing ? "Save PO changes" : "Save PO and add stock"}
           </button>
         </form>
       )}
