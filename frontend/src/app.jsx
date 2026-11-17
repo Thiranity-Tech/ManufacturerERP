@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   Boxes,
@@ -382,6 +382,7 @@ function Workspace({ session, onSignOut }) {
   const [platformAdmin, setPlatformAdmin] = useState(false);
   const [workspaceLoading, setWorkspaceLoading] = useState(true);
   const [navigationOpen, setNavigationOpen] = useState(false);
+  const savingRef = useRef(false);
 
   async function load() {
     try {
@@ -556,6 +557,8 @@ function Workspace({ session, onSignOut }) {
     );
 
   async function addRecord(table, values) {
+    if (savingRef.current) return null;
+    savingRef.current = true;
     const { data, error: insertError } = await supabase
       .from(table)
       .insert({ ...values, organization_id: workspace.id })
@@ -563,9 +566,21 @@ function Workspace({ session, onSignOut }) {
       .single();
     if (insertError) {
       setError(insertError.message);
+      savingRef.current = false;
       return null;
     }
-    await load();
+    const optimisticRow = { ...data };
+    if (table === "material_requests") optimisticRow.raw_materials = materials.find((material) => material.id === data.raw_material_id);
+    if (table === "products") setProducts((current) => [optimisticRow, ...current]);
+    if (table === "jobs") setJobs((current) => [optimisticRow, ...current]);
+    if (table === "job_bom_items") setBomItems((current) => [optimisticRow, ...current]);
+    if (table === "expenses") setExpenses((current) => [optimisticRow, ...current]);
+    if (table === "material_requests") setMaterialRequests((current) => [optimisticRow, ...current]);
+    if (table === "attendance") setAttendance((current) => [optimisticRow, ...current]);
+    // Refresh in the background for related totals and joins. Do not keep the
+    // user waiting for every ERP table to reload before showing their new row.
+    void load();
+    savingRef.current = false;
     return data;
   }
   const role = workspace?.role || "employee";
@@ -602,14 +617,18 @@ function Workspace({ session, onSignOut }) {
       : navigation.find((item) => item.id === active)?.label || "Dashboard";
 
   const run = async (action) => {
+    if (savingRef.current) return false;
+    savingRef.current = true;
     try {
       setError("");
       await action();
-      await load();
+      void load();
       return true;
     } catch (err) {
       setError(err.message || "Operation failed.");
       return false;
+    } finally {
+      savingRef.current = false;
     }
   };
   return (
