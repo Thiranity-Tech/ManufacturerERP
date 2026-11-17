@@ -1451,6 +1451,7 @@ function JobsModule({ jobs, bomItems, materials, addRecord }) {
               label="Planned quantity"
               type="number"
               min="0.01"
+              step="0.01"
               value={bom.planned_quantity}
               onChange={(e) =>
                 setBom({ ...bom, planned_quantity: e.target.value })
@@ -1592,6 +1593,7 @@ function PurchaseOrders({ rows, onSave }) {
             label="Quantity"
             type="number"
             min="0.01"
+            step="0.01"
             value={form.material_quantity}
             onChange={(e) =>
               setForm({ ...form, material_quantity: e.target.value })
