@@ -1375,6 +1375,7 @@ function JobsModule({
 }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState("");
+  const [jobSearch, setJobSearch] = useState("");
   const [editing, setEditing] = useState(null);
   const [designImages, setDesignImages] = useState([]);
   const [imageInputKey, setImageInputKey] = useState(0);
@@ -1526,6 +1527,43 @@ function JobsModule({
     if (added) setBom({ material_name: "", planned_quantity: "", unit: "" });
   };
   const selectedBom = bomItems.filter((item) => item.job_id === selected);
+  const matchingJobs = useMemo(() => {
+    const terms = jobSearch
+      .toLowerCase()
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    if (!terms.length) return jobs;
+    return jobs
+      .map((item) => {
+        const bomText = bomItems
+          .filter((bomItem) => bomItem.job_id === item.id)
+          .map((bomItem) => `${bomItem.material_name} ${bomItem.unit}`)
+          .join(" ");
+        const searchable = [
+          item.job_name,
+          item.project_name,
+          item.customer_name,
+          item.design_requirements,
+          item.height,
+          item.breadth,
+          item.length,
+          item.sheet_count,
+          bomText,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        const score = terms.reduce(
+          (total, term) => total + (searchable.includes(term) ? 1 : 0),
+          0,
+        );
+        return { item, score };
+      })
+      .filter(({ score }) => score === terms.length)
+      .sort((left, right) => right.score - left.score)
+      .map(({ item }) => item);
+  }, [jobs, bomItems, jobSearch]);
   return (
     <>
       <div className="module-heading">
@@ -1653,8 +1691,21 @@ function JobsModule({
         </form>
       )}
       <section className="panel table-panel">
-        <h3>Jobs</h3>
-        {jobs.length ? (
+        <div className="job-table-heading">
+          <div>
+            <h3>Jobs</h3>
+            <p>Search using natural words such as customer, material, project, requirement, or dimension.</p>
+          </div>
+          <label className="job-search">
+            <span>Search jobs</span>
+            <input
+              value={jobSearch}
+              onChange={(event) => setJobSearch(event.target.value)}
+              placeholder="e.g. Apollo steel cabinet"
+            />
+          </label>
+        </div>
+        {matchingJobs.length ? (
           <table>
             <thead>
               <tr>
@@ -1672,7 +1723,7 @@ function JobsModule({
               </tr>
             </thead>
             <tbody>
-              {jobs.map((item) => (
+              {matchingJobs.map((item) => (
                 <tr
                   key={item.id}
                   className={selected === item.id ? "selected-row" : ""}
@@ -1743,7 +1794,7 @@ function JobsModule({
         ) : (
           <div className="empty">
             <FileBarChart size={27} />
-            No jobs created.
+            {jobs.length ? "No jobs match this search." : "No jobs created."}
           </div>
         )}
       </section>
