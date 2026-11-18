@@ -1460,17 +1460,39 @@ function JobsModule({
               type="file"
               accept="image/png,image/jpeg,image/webp"
               multiple
-              onChange={(event) =>
-                setDesignImages(Array.from(event.target.files || []))
-              }
+              onChange={(event) => {
+                const newImages = Array.from(event.target.files || []);
+                setDesignImages((current) => [...current, ...newImages]);
+                // Clear the picker after every selection. This lets the user
+                // select more images, including another file from the same folder.
+                setImageInputKey((current) => current + 1);
+              }}
             />
             <small>
               Optional: select any number of PNG, JPG, or WebP images. Each image may be up to 5 MB.
             </small>
             {designImages.length > 0 && (
-              <small className="image-selection-summary">
-                {designImages.length} image{designImages.length === 1 ? "" : "s"} selected
-              </small>
+              <div className="image-selection-summary">
+                <small>
+                  {designImages.length} image{designImages.length === 1 ? "" : "s"} selected
+                </small>
+                <div className="selected-image-list">
+                  {designImages.map((image, index) => (
+                    <button
+                      key={`${image.name}-${image.size}-${index}`}
+                      type="button"
+                      className="remove-image"
+                      onClick={() =>
+                        setDesignImages((current) =>
+                          current.filter((_, imageIndex) => imageIndex !== index),
+                        )
+                      }
+                    >
+                      {image.name} ×
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
           </label>
           <Field
