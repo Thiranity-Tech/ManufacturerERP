@@ -1307,7 +1307,8 @@ function JobsModule({
 }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState("");
-  const [designImage, setDesignImage] = useState(null);
+  const [designImages, setDesignImages] = useState([]);
+  const [imageInputKey, setImageInputKey] = useState(0);
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
   const canManageJobs =
@@ -1331,34 +1332,38 @@ function JobsModule({
   const createJob = async (event) => {
     event.preventDefault();
     if (saving || !canManageJobs) return;
-    if (designImage && !designImage.type.startsWith("image/")) {
-      setFormError("Upload an image file for the design requirement.");
+    if (designImages.some((image) => !image.type.startsWith("image/"))) {
+      setFormError("Upload only image files for the design requirement.");
       return;
     }
-    if (designImage && designImage.size > 5 * 1024 * 1024) {
-      setFormError("The design image must be 5 MB or smaller.");
+    if (designImages.some((image) => image.size > 5 * 1024 * 1024)) {
+      setFormError("Each design image must be 5 MB or smaller.");
       return;
     }
     setSaving(true);
     setFormError("");
-    let designImageUrl = null;
-    if (designImage) {
+    const designImageUrls = [];
+    for (const designImage of designImages) {
       const safeName = designImage.name.replace(/[^a-zA-Z0-9._-]/g, "-");
       const path = `${workspaceId}/${crypto.randomUUID()}-${safeName}`;
       const { error: uploadError } = await supabase.storage
         .from("job-designs")
         .upload(path, designImage, { contentType: designImage.type });
       if (uploadError) {
-        setFormError(uploadError.message || "Could not upload the design image.");
+        setFormError(uploadError.message || "Could not upload the design images.");
         setSaving(false);
         return;
       }
-      designImageUrl = supabase.storage.from("job-designs").getPublicUrl(path)
-        .data.publicUrl;
+      designImageUrls.push(
+        supabase.storage.from("job-designs").getPublicUrl(path).data.publicUrl,
+      );
     }
     const saved = await addRecord("jobs", {
       ...job,
-      design_image_url: designImageUrl,
+      // Keep the first URL for existing workspaces and save the complete list
+      // for the new multi-image design gallery.
+      design_image_url: designImageUrls[0] || null,
+      design_image_urls: designImageUrls,
       height: Number(job.height || 0),
       breadth: Number(job.breadth || 0),
       length: Number(job.length || 0),
@@ -1366,7 +1371,8 @@ function JobsModule({
     });
     if (saved) {
       setOpen(false);
-      setDesignImage(null);
+      setDesignImages([]);
+      setImageInputKey((current) => current + 1);
       setJob({
         job_name: "",
         project_name: "",
@@ -1448,13 +1454,24 @@ function JobsModule({
             placeholder="Design / drawing reference"
           />
           <label className="field">
-            <span>Design requirement image</span>
+            <span>Design requirement images</span>
             <input
+              key={imageInputKey}
               type="file"
               accept="image/png,image/jpeg,image/webp"
-              onChange={(event) => setDesignImage(event.target.files?.[0] || null)}
+              multiple
+              onChange={(event) =>
+                setDesignImages(Array.from(event.target.files || []))
+              }
             />
-            <small>Optional PNG, JPG, or WebP image (maximum 5 MB).</small>
+            <small>
+              Optional: select any number of PNG, JPG, or WebP images. Each image may be up to 5 MB.
+            </small>
+            {designImages.length > 0 && (
+              <small className="image-selection-summary">
+                {designImages.length} image{designImages.length === 1 ? "" : "s"} selected
+              </small>
+            )}
           </label>
           <Field
             label="Height"
@@ -1516,19 +1533,31 @@ function JobsModule({
                   <td>{item.customer_name || "—"}</td>
                   <td>{item.design_requirements || "—"}</td>
                   <td>
-                    {item.design_image_url ? (
-                      <a
-                        href={item.design_image_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="design-image-link"
-                      >
-                        <img src={item.design_image_url} alt="Design requirement" />
-                        View image
-                      </a>
-                    ) : (
-                      "—"
-                    )}
+                    {(() => {
+                      const images = Array.isArray(item.design_image_urls)
+                        ? item.design_image_urls
+                        : item.design_image_url
+                          ? [item.design_image_url]
+                          : [];
+                      return images.length ? (
+                        <div className="design-image-list">
+                          {images.map((url, index) => (
+                            <a
+                              key={url}
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="design-image-link"
+                              title={`Open design image ${index + 1}`}
+                            >
+                              <img src={url} alt={`Design requirement ${index + 1}`} />
+                            </a>
+                          ))}
+                        </div>
+                      ) : (
+                        "—"
+                      );
+                    })()}
                   </td>
                   <td>{item.height || "—"}</td>
                   <td>{item.breadth || "—"}</td>

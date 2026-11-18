@@ -4,6 +4,15 @@
 alter table public.jobs
   add column if not exists design_image_url text;
 
+alter table public.jobs
+  add column if not exists design_image_urls jsonb not null default '[]'::jsonb;
+
+-- Preserve images already stored by the earlier single-image version.
+update public.jobs
+set design_image_urls = jsonb_build_array(design_image_url)
+where design_image_url is not null
+  and coalesce(jsonb_array_length(design_image_urls), 0) = 0;
+
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'job-designs',
