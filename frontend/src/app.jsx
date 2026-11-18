@@ -2922,8 +2922,7 @@ function FinancialModule({ stats, purchaseOrders }) {
     </section>
   );
 }
-function ProcessBuilder({ products, onAddProduct, onSavePlan }) {
-  const [productId, setProductId] = useState("");
+function ProcessBuilder({ onAddProduct, onSavePlan }) {
   const [newProduct, setNewProduct] = useState("");
   const [stepCount, setStepCount] = useState(1);
   const [steps, setSteps] = useState([{ name: "" }]);
@@ -2951,8 +2950,8 @@ function ProcessBuilder({ products, onAddProduct, onSavePlan }) {
   }
   async function save() {
     if (saving) return;
-    if (!productId && !newProduct.trim()) {
-      setMessage("Choose an existing product or create a new product first.");
+    if (!newProduct.trim()) {
+      setMessage("Enter a new product name first.");
       return;
     }
     if (steps.some((step) => !step.name.trim())) {
@@ -2961,24 +2960,19 @@ function ProcessBuilder({ products, onAddProduct, onSavePlan }) {
     }
     setSaving(true);
     setMessage("Saving process plan…");
-    let id = productId;
-    if (!id) {
-      const product = await onAddProduct({
-        name: newProduct.trim(),
-        stock: 0,
-        price: 0,
-      });
-      if (!product) {
-        setMessage("Could not create the product.");
-        setSaving(false);
-        return;
-      }
-      id = product.id;
+    const product = await onAddProduct({
+      name: newProduct.trim(),
+      stock: 0,
+      price: 0,
+    });
+    if (!product) {
+      setMessage("Could not create the product.");
+      setSaving(false);
+      return;
     }
-    const saved = await onSavePlan(id, steps, materialMode);
+    const saved = await onSavePlan(product.id, steps, materialMode);
     if (saved) {
       setMessage("Product process plan saved successfully.");
-      setProductId("");
       setNewProduct("");
       setCount(1);
       setSteps([{ name: "" }]);
@@ -2997,30 +2991,10 @@ function ProcessBuilder({ products, onAddProduct, onSavePlan }) {
         material-fetch rule for the whole product.
       </p>
       <div className="builder-fields">
-        <label className="field">
-          <span>Existing finished product</span>
-          <select
-            value={productId}
-            onChange={(event) => {
-              setProductId(event.target.value);
-              setNewProduct("");
-            }}
-          >
-            <option value="">Create a new product below</option>
-            {products.map((product) => (
-              <option key={product.id} value={product.id}>
-                {product.name}
-              </option>
-            ))}
-          </select>
-        </label>
         <Field
-          label="New product name"
+          label="Product name"
           value={newProduct}
-          onChange={(event) => {
-            setNewProduct(event.target.value);
-            setProductId("");
-          }}
+          onChange={(event) => setNewProduct(event.target.value)}
           placeholder="e.g. Precision gear"
         />
         <label className="field">
