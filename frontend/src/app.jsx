@@ -905,6 +905,9 @@ function Module({
     return (
       <ProductionModule
         products={products}
+        processes={processDefinitions}
+        employees={employees}
+        role={role}
         assignedProcess={
           currentEmployee?.assigned_process_id
             ? processDefinitions.find(
@@ -921,6 +924,24 @@ function Module({
               note: data.process_note || null,
             });
             if (error) throw error;
+          })
+        }
+        onAssignProcess={({ previousEmployeeId, employeeId, processId }) =>
+          run(async () => {
+            if (previousEmployeeId && previousEmployeeId !== employeeId) {
+              const { error: clearError } = await supabase
+                .from("employees")
+                .update({ assigned_process_id: null })
+                .eq("id", previousEmployeeId);
+              if (clearError) throw clearError;
+            }
+            if (employeeId) {
+              const { error: assignError } = await supabase
+                .from("employees")
+                .update({ assigned_process_id: processId })
+                .eq("id", employeeId);
+              if (assignError) throw assignError;
+            }
           })
         }
       />
@@ -2303,12 +2324,29 @@ function DispatchModule({ products, rows, onDispatch }) {
     </>
   );
 }
-function ProductionModule({ products, assignedProcess, employee, onProduce }) {
+function ProductionModule({
+  products,
+  processes,
+  employees,
+  role,
+  assignedProcess,
+  employee,
+  onProduce,
+  onAssignProcess,
+}) {
   const [form, setForm] = useState({
     product_id: "",
     quantity: "",
     process_note: "",
   });
+  const [assignmentOpen, setAssignmentOpen] = useState(false);
+  const [assignmentProductId, setAssignmentProductId] = useState("");
+  const canAssignProcesses = ["superadmin", "admin", "manager"].includes(role);
+  const selectedProcesses = processes.filter(
+    (process) => process.product_id === assignmentProductId,
+  );
+  const assignedEmployeeFor = (processId) =>
+    employees.find((person) => person.assigned_process_id === processId);
   const submit = async (event) => {
     event.preventDefault();
     await onProduce({
@@ -2317,16 +2355,6 @@ function ProductionModule({ products, assignedProcess, employee, onProduce }) {
     });
     setForm({ product_id: "", quantity: "", process_note: "" });
   };
-  if (employee?.department === "Manufacturing" && !assignedProcess)
-    return (
-      <section className="panel">
-        <h3>Process assignment pending</h3>
-        <p>
-          Your manager must assign a process before you can record manufacturing
-          output. You can still request raw material from Material Procurement.
-        </p>
-      </section>
-    );
   return (
     <>
       <div className="module-heading">
@@ -2337,7 +2365,72 @@ function ProductionModule({ products, assignedProcess, employee, onProduce }) {
               : "Complete production to add the finished output into Finished Goods inventory."}
           </p>
         </div>
+        {canAssignProcesses && (
+          <button
+            className="primary-button compact"
+            onClick={() => setAssignmentOpen(!assignmentOpen)}
+          >
+            <Users size={17} />
+            Assign process
+          </button>
+        )}
       </div>
+      {assignmentOpen && canAssignProcesses && (
+        <section className="panel process-assignment-panel">
+          <h3>Assign employees to product processes</h3>
+          <p>
+            Choose a product to view every process defined for it, then assign an employee to each process.
+          </p>
+          <label className="field assignment-product">
+            <span>Product</span>
+            <select
+              value={assignmentProductId}
+              onChange={(event) => setAssignmentProductId(event.target.value)}
+            >
+              <option value="">Select product</option>
+              {products.map((product) => (
+                <option key={product.id} value={product.id}>
+                  {product.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          {assignmentProductId && (
+            selectedProcesses.length ? (
+              <div className="process-assignment-list">
+                {selectedProcesses.map((process, index) => {
+                  const assignedEmployee = assignedEmployeeFor(process.id);
+                  return (
+                    <label className="field" key={process.id}>
+                      <span>Process {index + 1}: {process.name}</span>
+                      <select
+                        value={assignedEmployee?.id || ""}
+                        onChange={(event) => {
+                          const nextEmployeeId = event.target.value;
+                          onAssignProcess({
+                            previousEmployeeId: assignedEmployee?.id || null,
+                            employeeId: nextEmployeeId || null,
+                            processId: process.id,
+                          });
+                        }}
+                      >
+                        <option value="">No employee assigned</option>
+                        {employees.map((person) => (
+                          <option key={person.id} value={person.id}>
+                            {person.full_name} {person.department ? `— ${person.department}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="access-note">No processes have been created for this product yet.</p>
+            )
+          )}
+        </section>
+      )}
       <form className="record-form panel" onSubmit={submit}>
         <label className="field">
           <span>Finished product</span>
