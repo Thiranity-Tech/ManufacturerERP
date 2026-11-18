@@ -378,6 +378,7 @@ function Workspace({ session, onSignOut }) {
   const [jobs, setJobs] = useState([]);
   const [bomItems, setBomItems] = useState([]);
   const [bomPurchaseRequests, setBomPurchaseRequests] = useState([]);
+  const [processAssignments, setProcessAssignments] = useState([]);
   const [error, setError] = useState("");
   const [subscriptionBlocked, setSubscriptionBlocked] = useState(false);
   const [platformAdmin, setPlatformAdmin] = useState(false);
@@ -418,6 +419,7 @@ function Workspace({ session, onSignOut }) {
         jobResult,
         bomResult,
         bomPurchaseRequestResult,
+        processAssignmentResult,
       ] = await Promise.all([
         supabase
           .from("products")
@@ -484,6 +486,11 @@ function Workspace({ session, onSignOut }) {
           .select("*, jobs(job_name)")
           .eq("organization_id", current.id)
           .order("created_at", { ascending: false }),
+        supabase
+          .from("process_work_assignments")
+          .select("*, products(name), process_definitions(name), employees(full_name)")
+          .eq("organization_id", current.id)
+          .order("assigned_at", { ascending: false }),
       ]);
       if (
         productResult.error ||
@@ -498,7 +505,8 @@ function Workspace({ session, onSignOut }) {
         attendanceResult.error ||
         jobResult.error ||
         bomResult.error ||
-        bomPurchaseRequestResult.error
+        bomPurchaseRequestResult.error ||
+        processAssignmentResult.error
       )
         throw (
           productResult.error ||
@@ -513,7 +521,8 @@ function Workspace({ session, onSignOut }) {
           attendanceResult.error ||
           jobResult.error ||
           bomResult.error ||
-          bomPurchaseRequestResult.error
+          bomPurchaseRequestResult.error ||
+          processAssignmentResult.error
         );
       setProducts(productResult.data);
       setMaterials(materialResult.data);
@@ -528,6 +537,7 @@ function Workspace({ session, onSignOut }) {
       setJobs(jobResult.data);
       setBomItems(bomResult.data);
       setBomPurchaseRequests(bomPurchaseRequestResult.data);
+      setProcessAssignments(processAssignmentResult.data);
     } catch (err) {
       setError(err.message || "Could not load workspace data.");
     } finally {
@@ -611,8 +621,9 @@ function Workspace({ session, onSignOut }) {
           item.id === "dashboard" ||
           item.id === "attendance" ||
           (designEmployee && item.id === "jobs") ||
+          (currentEmployee?.assigned_process_id && item.id === "process") ||
           (manufacturingEmployee &&
-            ["procurement", "process"].includes(item.id))),
+            item.id === "procurement")),
     ),
     ...(platformAdmin
       ? [
@@ -727,6 +738,7 @@ function Workspace({ session, onSignOut }) {
           jobs={jobs}
           bomItems={bomItems}
           bomPurchaseRequests={bomPurchaseRequests}
+          processAssignments={processAssignments}
           currentEmployee={currentEmployee}
           workspaceId={workspace?.id}
           addRecord={addRecord}
@@ -755,6 +767,7 @@ function Module({
   jobs,
   bomItems,
   bomPurchaseRequests,
+  processAssignments,
   currentEmployee,
   workspaceId,
   addRecord,
@@ -907,6 +920,7 @@ function Module({
         products={products}
         processes={processDefinitions}
         employees={employees}
+        assignments={processAssignments}
         role={role}
         assignedProcess={
           currentEmployee?.assigned_process_id
@@ -916,32 +930,21 @@ function Module({
             : null
         }
         employee={currentEmployee}
-        onProduce={(data) =>
+        onCompleteAssignment={(assignmentId) =>
           run(async () => {
-            const { error } = await supabase.rpc("record_production", {
-              product_uuid: data.product_id,
-              produced_quantity: Number(data.quantity),
-              note: data.process_note || null,
+            const { error } = await supabase.rpc("complete_my_assigned_process", {
+              work_assignment_id: assignmentId,
             });
             if (error) throw error;
           })
         }
-        onAssignProcess={({ previousEmployeeId, employeeId, processId }) =>
+        onAssignProcess={(employeeId, processId) =>
           run(async () => {
-            if (previousEmployeeId && previousEmployeeId !== employeeId) {
-              const { error: clearError } = await supabase
-                .from("employees")
-                .update({ assigned_process_id: null })
-                .eq("id", previousEmployeeId);
-              if (clearError) throw clearError;
-            }
-            if (employeeId) {
-              const { error: assignError } = await supabase
-                .from("employees")
-                .update({ assigned_process_id: processId })
-                .eq("id", employeeId);
-              if (assignError) throw assignError;
-            }
+            const { error } = await supabase.rpc("assign_process_employee", {
+              target_process_id: processId,
+              target_employee_id: employeeId || null,
+            });
+            if (error) throw error;
           })
         }
       />
@@ -2328,41 +2331,32 @@ function ProductionModule({
   products,
   processes,
   employees,
+  assignments,
   role,
   assignedProcess,
   employee,
-  onProduce,
+  onCompleteAssignment,
   onAssignProcess,
 }) {
-  const [form, setForm] = useState({
-    product_id: "",
-    quantity: "",
-    process_note: "",
-  });
   const [assignmentOpen, setAssignmentOpen] = useState(false);
   const [assignmentProductId, setAssignmentProductId] = useState("");
   const canAssignProcesses = ["superadmin", "admin", "manager"].includes(role);
   const selectedProcesses = processes.filter(
     (process) => process.product_id === assignmentProductId,
   );
-  const assignedEmployeeFor = (processId) =>
-    employees.find((person) => person.assigned_process_id === processId);
-  const submit = async (event) => {
-    event.preventDefault();
-    await onProduce({
-      ...form,
-      process_note: `${assignedProcess ? `${assignedProcess.name}: ` : ""}${form.process_note}`,
-    });
-    setForm({ product_id: "", quantity: "", process_note: "" });
-  };
+  const assignmentFor = (processId) =>
+    assignments.find((assignment) => assignment.process_id === processId);
+  const visibleAssignments = canAssignProcesses
+    ? assignments
+    : assignments.filter((assignment) => assignment.employee_id === employee?.id);
   return (
     <>
       <div className="module-heading">
         <div>
           <p>
             {assignedProcess
-              ? `My assigned process: ${assignedProcess.name}${assignedProcess.products?.name ? ` — ${assignedProcess.products.name}` : ""}. Complete it to add finished output.`
-              : "Complete production to add the finished output into Finished Goods inventory."}
+              ? `My assigned process: ${assignedProcess.name}${assignedProcess.products?.name ? ` — ${assignedProcess.products.name}` : ""}. Mark the work completed after you finish it.`
+              : "View your assigned work and mark it completed when the process is finished."}
           </p>
         </div>
         {canAssignProcesses && (
@@ -2399,19 +2393,15 @@ function ProductionModule({
             selectedProcesses.length ? (
               <div className="process-assignment-list">
                 {selectedProcesses.map((process, index) => {
-                  const assignedEmployee = assignedEmployeeFor(process.id);
+                  const assignment = assignmentFor(process.id);
                   return (
                     <label className="field" key={process.id}>
                       <span>Process {index + 1}: {process.name}</span>
                       <select
-                        value={assignedEmployee?.id || ""}
+                        value={assignment?.employee_id || ""}
                         onChange={(event) => {
                           const nextEmployeeId = event.target.value;
-                          onAssignProcess({
-                            previousEmployeeId: assignedEmployee?.id || null,
-                            employeeId: nextEmployeeId || null,
-                            processId: process.id,
-                          });
+                          onAssignProcess(nextEmployeeId, process.id);
                         }}
                       >
                         <option value="">No employee assigned</option>
@@ -2431,43 +2421,53 @@ function ProductionModule({
           )}
         </section>
       )}
-      <form className="record-form panel" onSubmit={submit}>
-        <label className="field">
-          <span>Finished product</span>
-          <select
-            required
-            value={form.product_id}
-            onChange={(event) =>
-              setForm({ ...form, product_id: event.target.value })
-            }
-          >
-            <option value="">Select product</option>
-            {products.map((product) => (
-              <option key={product.id} value={product.id}>
-                {product.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <Field
-          label="Finished quantity"
-          type="number"
-          value={form.quantity}
-          onChange={(event) =>
-            setForm({ ...form, quantity: event.target.value })
-          }
-        />
-        <Field
-          label="Work note"
-          value={form.process_note}
-          onChange={(event) =>
-            setForm({ ...form, process_note: event.target.value })
-          }
-        />
-        <button className="primary-button compact">
-          Complete process & add finished goods
-        </button>
-      </form>
+      <section className="panel table-panel">
+        <h3>Process work assignments</h3>
+        {visibleAssignments.length ? (
+          <table>
+            <thead>
+              <tr>
+                <th>Product name</th>
+                <th>Process</th>
+                {canAssignProcesses && <th>Assigned employee</th>}
+                <th>Work assigned</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleAssignments.map((assignment) => (
+                <tr key={assignment.id}>
+                  <td>{assignment.products?.name || "—"}</td>
+                  <td>{assignment.process_definitions?.name || "—"}</td>
+                  {canAssignProcesses && <td>{assignment.employees?.full_name || "—"}</td>}
+                  <td>
+                    <span className={`work-status ${assignment.status}`}>
+                      {assignment.status === "completed" ? "Completed" : "Pending"}
+                    </span>
+                  </td>
+                  <td>
+                    {assignment.status === "pending" && assignment.employee_id === employee?.id ? (
+                      <button
+                        className="row-action"
+                        onClick={() => onCompleteAssignment(assignment.id)}
+                      >
+                        Mark as done
+                      </button>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="empty">
+            <Workflow size={27} />
+            No process work has been assigned yet.
+          </div>
+        )}
+      </section>
     </>
   );
 }

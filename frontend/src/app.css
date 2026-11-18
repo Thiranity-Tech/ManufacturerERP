@@ -171,3 +171,6 @@
 .assignment-product { max-width: 440px; }
 .process-assignment-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
 @media (max-width: 650px) { .process-assignment-list { grid-template-columns: 1fr; } }
+.work-status { display: inline-flex; min-width: 78px; justify-content: center; padding: 5px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.work-status.pending { color: #9a6700; background: #fff4ce; }
+.work-status.completed { color: #16794a; background: #dcfae8; }
