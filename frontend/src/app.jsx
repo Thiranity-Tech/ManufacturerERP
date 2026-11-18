@@ -590,13 +590,17 @@ function Workspace({ session, onSignOut }) {
   );
   const manufacturingEmployee =
     role === "employee" && currentEmployee?.department === "Manufacturing";
+  const designEmployee =
+    role === "employee" && currentEmployee?.department === "Design";
   const visibleNavigation = [
     ...navigation.filter(
       (item) =>
-        item.roles.includes(role) &&
+        (item.roles.includes(role) ||
+          (designEmployee && item.id === "jobs")) &&
         (role !== "employee" ||
           item.id === "dashboard" ||
           item.id === "attendance" ||
+          (designEmployee && item.id === "jobs") ||
           (manufacturingEmployee &&
             ["procurement", "process"].includes(item.id))),
     ),
@@ -713,6 +717,7 @@ function Workspace({ session, onSignOut }) {
           jobs={jobs}
           bomItems={bomItems}
           currentEmployee={currentEmployee}
+          workspaceId={workspace?.id}
           addRecord={addRecord}
           run={run}
         />
@@ -739,6 +744,7 @@ function Module({
   jobs,
   bomItems,
   currentEmployee,
+  workspaceId,
   addRecord,
   run,
 }) {
@@ -807,6 +813,9 @@ function Module({
         materials={materials}
         addRecord={addRecord}
         run={run}
+        role={role}
+        currentEmployee={currentEmployee}
+        workspaceId={workspaceId}
       />
     );
   if (active === "inventory")
@@ -1287,9 +1296,23 @@ function SubscriptionEnded({ workspace, onSignOut }) {
     </main>
   );
 }
-function JobsModule({ jobs, bomItems, materials, addRecord }) {
+function JobsModule({
+  jobs,
+  bomItems,
+  materials,
+  addRecord,
+  role,
+  currentEmployee,
+  workspaceId,
+}) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState("");
+  const [designImage, setDesignImage] = useState(null);
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const canManageJobs =
+    ["superadmin", "admin", "manager"].includes(role) ||
+    currentEmployee?.department === "Design";
   const [job, setJob] = useState({
     job_name: "",
     project_name: "",
@@ -1307,8 +1330,35 @@ function JobsModule({ jobs, bomItems, materials, addRecord }) {
   });
   const createJob = async (event) => {
     event.preventDefault();
+    if (saving || !canManageJobs) return;
+    if (designImage && !designImage.type.startsWith("image/")) {
+      setFormError("Upload an image file for the design requirement.");
+      return;
+    }
+    if (designImage && designImage.size > 5 * 1024 * 1024) {
+      setFormError("The design image must be 5 MB or smaller.");
+      return;
+    }
+    setSaving(true);
+    setFormError("");
+    let designImageUrl = null;
+    if (designImage) {
+      const safeName = designImage.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+      const path = `${workspaceId}/${crypto.randomUUID()}-${safeName}`;
+      const { error: uploadError } = await supabase.storage
+        .from("job-designs")
+        .upload(path, designImage, { contentType: designImage.type });
+      if (uploadError) {
+        setFormError(uploadError.message || "Could not upload the design image.");
+        setSaving(false);
+        return;
+      }
+      designImageUrl = supabase.storage.from("job-designs").getPublicUrl(path)
+        .data.publicUrl;
+    }
     const saved = await addRecord("jobs", {
       ...job,
+      design_image_url: designImageUrl,
       height: Number(job.height || 0),
       breadth: Number(job.breadth || 0),
       length: Number(job.length || 0),
@@ -1316,6 +1366,7 @@ function JobsModule({ jobs, bomItems, materials, addRecord }) {
     });
     if (saved) {
       setOpen(false);
+      setDesignImage(null);
       setJob({
         job_name: "",
         project_name: "",
@@ -1327,6 +1378,7 @@ function JobsModule({ jobs, bomItems, materials, addRecord }) {
         sheet_count: "",
       });
     }
+    setSaving(false);
   };
   const addBom = async (event) => {
     event.preventDefault();
@@ -1352,15 +1404,25 @@ function JobsModule({ jobs, bomItems, materials, addRecord }) {
             planned here; this page never changes stock.
           </p>
         </div>
-        <button
-          className="primary-button compact"
-          onClick={() => setOpen(!open)}
-        >
-          <Plus size={17} />
-          Create job
-        </button>
+        {canManageJobs && (
+          <button
+            className="primary-button compact"
+            onClick={() => {
+              setOpen(!open);
+              setFormError("");
+            }}
+          >
+            <Plus size={17} />
+            Create job
+          </button>
+        )}
       </div>
-      {open && (
+      {!canManageJobs && (
+        <p className="access-note">
+          Jobs, design requirements, and BOM are maintained by the Manager or Design team.
+        </p>
+      )}
+      {open && canManageJobs && (
         <form className="record-form panel" onSubmit={createJob}>
           <Field
             label="Job name"
@@ -1385,6 +1447,15 @@ function JobsModule({ jobs, bomItems, materials, addRecord }) {
             }
             placeholder="Design / drawing reference"
           />
+          <label className="field">
+            <span>Design requirement image</span>
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={(event) => setDesignImage(event.target.files?.[0] || null)}
+            />
+            <small>Optional PNG, JPG, or WebP image (maximum 5 MB).</small>
+          </label>
           <Field
             label="Height"
             type="number"
@@ -1409,7 +1480,10 @@ function JobsModule({ jobs, bomItems, materials, addRecord }) {
             value={job.sheet_count}
             onChange={(e) => setJob({ ...job, sheet_count: e.target.value })}
           />
-          <button className="primary-button compact">Save job</button>
+          {formError && <p className="form-error">{formError}</p>}
+          <button className="primary-button compact" disabled={saving}>
+            {saving ? "Saving job…" : "Save job"}
+          </button>
         </form>
       )}
       <section className="panel table-panel">
@@ -1422,6 +1496,11 @@ function JobsModule({ jobs, bomItems, materials, addRecord }) {
                 <th>Project</th>
                 <th>Customer</th>
                 <th>Requirements</th>
+                <th>Design image</th>
+                <th>Height</th>
+                <th>Breadth</th>
+                <th>Length</th>
+                <th>No. of sheets</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -1436,6 +1515,25 @@ function JobsModule({ jobs, bomItems, materials, addRecord }) {
                   <td>{item.project_name || "—"}</td>
                   <td>{item.customer_name || "—"}</td>
                   <td>{item.design_requirements || "—"}</td>
+                  <td>
+                    {item.design_image_url ? (
+                      <a
+                        href={item.design_image_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="design-image-link"
+                      >
+                        <img src={item.design_image_url} alt="Design requirement" />
+                        View image
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td>{item.height || "—"}</td>
+                  <td>{item.breadth || "—"}</td>
+                  <td>{item.length || "—"}</td>
+                  <td>{item.sheet_count || "—"}</td>
                   <td>{item.status}</td>
                 </tr>
               ))}
@@ -1448,7 +1546,7 @@ function JobsModule({ jobs, bomItems, materials, addRecord }) {
           </div>
         )}
       </section>
-      {selected && (
+      {selected && canManageJobs && (
         <>
           <form className="record-form panel" onSubmit={addBom}>
             <label className="field">

@@ -157,3 +157,7 @@
   .mobile-menu { width: 40px; height: 40px; }
   .erp-content h1 { font-size: 25px; }
 }
+
+.access-note { margin: 0 0 18px; color: #62728b; font-size: 14px; }
+.design-image-link { display: inline-flex; align-items: center; gap: 7px; color: #214d9f; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.design-image-link img { width: 34px; height: 34px; border: 1px solid #d7e0ed; border-radius: 6px; object-fit: cover; }
