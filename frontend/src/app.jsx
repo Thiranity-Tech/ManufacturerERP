@@ -789,6 +789,14 @@ function Module({
             if (error) throw error;
           })
         }
+        onDelete={(orderId) =>
+          run(async () => {
+            const { error } = await supabase.rpc("delete_purchase_order", {
+              order_id: orderId,
+            });
+            if (error) throw error;
+          })
+        }
       />
     );
   if (active === "jobs")
@@ -1510,7 +1518,7 @@ function JobsModule({ jobs, bomItems, materials, addRecord }) {
     </>
   );
 }
-function PurchaseOrders({ rows, onSave }) {
+function PurchaseOrders({ rows, onSave, onDelete }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [formError, setFormError] = useState("");
@@ -1563,6 +1571,23 @@ function PurchaseOrders({ rows, onSave }) {
       material_unit_cost: row.unit_cost || "",
     });
     setOpen(true);
+  };
+  const remove = async (row) => {
+    const label = row.purchase_order_number
+      ? `PO ${row.purchase_order_number}`
+      : "this purchase order";
+    if (
+      !window.confirm(
+        `Delete ${label}? Its received stock will be reversed if it has not been issued.`,
+      )
+    )
+      return;
+    const deleted = await onDelete(row.id);
+    if (deleted && editing?.id === row.id) {
+      setOpen(false);
+      setEditing(null);
+      setForm(blank);
+    }
   };
   return (
     <>
@@ -1659,6 +1684,12 @@ function PurchaseOrders({ rows, onSave }) {
                   <td>
                     <button className="row-action" onClick={() => edit(row)}>
                       Edit PO
+                    </button>
+                    <button
+                      className="row-action row-delete"
+                      onClick={() => remove(row)}
+                    >
+                      Delete PO
                     </button>
                   </td>
                 </tr>
