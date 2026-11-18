@@ -1301,12 +1301,14 @@ function JobsModule({
   bomItems,
   materials,
   addRecord,
+  run,
   role,
   currentEmployee,
   workspaceId,
 }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState("");
+  const [editing, setEditing] = useState(null);
   const [designImages, setDesignImages] = useState([]);
   const [imageInputKey, setImageInputKey] = useState(0);
   const [formError, setFormError] = useState("");
@@ -1328,6 +1330,28 @@ function JobsModule({
     raw_material_id: "",
     planned_quantity: "",
   });
+  const clearJobForm = () => {
+    setEditing(null);
+    setJob({
+      job_name: "",
+      project_name: "",
+      customer_name: "",
+      design_requirements: "",
+      height: "",
+      breadth: "",
+      length: "",
+      sheet_count: "",
+    });
+    setDesignImages([]);
+    setImageInputKey((current) => current + 1);
+  };
+  const existingImageUrls = editing
+    ? Array.isArray(editing.design_image_urls)
+      ? editing.design_image_urls
+      : editing.design_image_url
+        ? [editing.design_image_url]
+        : []
+    : [];
   const createJob = async (event) => {
     event.preventDefault();
     if (saving || !canManageJobs) return;
@@ -1357,33 +1381,67 @@ function JobsModule({
         supabase.storage.from("job-designs").getPublicUrl(path).data.publicUrl,
       );
     }
-    const saved = await addRecord("jobs", {
+    const values = {
       ...job,
       // Keep the first URL for existing workspaces and save the complete list
       // for the new multi-image design gallery.
-      design_image_url: designImageUrls[0] || null,
-      design_image_urls: designImageUrls,
+      design_image_url: [...existingImageUrls, ...designImageUrls][0] || null,
+      design_image_urls: [...existingImageUrls, ...designImageUrls],
       height: Number(job.height || 0),
       breadth: Number(job.breadth || 0),
       length: Number(job.length || 0),
       sheet_count: Number(job.sheet_count || 0),
-    });
+    };
+    const saved = editing
+      ? await run(async () => {
+          const { error } = await supabase
+            .from("jobs")
+            .update(values)
+            .eq("id", editing.id);
+          if (error) throw error;
+        })
+      : await addRecord("jobs", values);
     if (saved) {
       setOpen(false);
-      setDesignImages([]);
-      setImageInputKey((current) => current + 1);
-      setJob({
-        job_name: "",
-        project_name: "",
-        customer_name: "",
-        design_requirements: "",
-        height: "",
-        breadth: "",
-        length: "",
-        sheet_count: "",
-      });
+      clearJobForm();
     }
     setSaving(false);
+  };
+  const editJob = (item) => {
+    setEditing(item);
+    setJob({
+      job_name: item.job_name || "",
+      project_name: item.project_name || "",
+      customer_name: item.customer_name || "",
+      design_requirements: item.design_requirements || "",
+      height: item.height ?? "",
+      breadth: item.breadth ?? "",
+      length: item.length ?? "",
+      sheet_count: item.sheet_count ?? "",
+    });
+    setDesignImages([]);
+    setImageInputKey((current) => current + 1);
+    setFormError("");
+    setOpen(true);
+  };
+  const deleteJob = async (item) => {
+    if (
+      !window.confirm(
+        `Delete job ${item.job_name}? Its BOM items will also be deleted.`,
+      )
+    )
+      return;
+    const deleted = await run(async () => {
+      const { error } = await supabase.from("jobs").delete().eq("id", item.id);
+      if (error) throw error;
+    });
+    if (deleted) {
+      if (selected === item.id) setSelected("");
+      if (editing?.id === item.id) {
+        setOpen(false);
+        clearJobForm();
+      }
+    }
   };
   const addBom = async (event) => {
     event.preventDefault();
@@ -1412,7 +1470,9 @@ function JobsModule({
           <button
             className="primary-button compact"
             onClick={() => {
-              setOpen(!open);
+              const nextOpen = !open;
+              setOpen(nextOpen);
+              if (nextOpen) clearJobForm();
               setFormError("");
             }}
           >
@@ -1467,7 +1527,7 @@ function JobsModule({
               }}
             />
             <small>
-              Optional: select any number of PNG, JPG, or WebP images. Each image may be up to 5 MB.
+              Optional: select any number of PNG, JPG, or WebP images. Each image may be up to 5 MB. Existing images stay attached when editing.
             </small>
             {designImages.length > 0 && (
               <div className="image-selection-summary">
@@ -1519,7 +1579,7 @@ function JobsModule({
           />
           {formError && <p className="form-error">{formError}</p>}
           <button className="primary-button compact" disabled={saving}>
-            {saving ? "Saving job…" : "Save job"}
+            {saving ? "Saving job…" : editing ? "Save job changes" : "Save job"}
           </button>
         </form>
       )}
@@ -1539,6 +1599,7 @@ function JobsModule({
                 <th>Length</th>
                 <th>No. of sheets</th>
                 <th>Status</th>
+                {canManageJobs && <th>Action</th>}
               </tr>
             </thead>
             <tbody>
@@ -1584,6 +1645,28 @@ function JobsModule({
                   <td>{item.length || "—"}</td>
                   <td>{item.sheet_count || "—"}</td>
                   <td>{item.status}</td>
+                  {canManageJobs && (
+                    <td>
+                      <button
+                        className="row-action"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          editJob(item);
+                        }}
+                      >
+                        Edit job
+                      </button>
+                      <button
+                        className="row-action row-delete"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          deleteJob(item);
+                        }}
+                      >
+                        Delete job
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
