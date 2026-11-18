@@ -2630,7 +2630,8 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
       nextErrors.email = "Enter a valid work email address.";
     if (form.password.length < 8)
       nextErrors.password = "Password must contain at least 8 characters.";
-    if (!form.department) nextErrors.department = "Select a department.";
+    if (form.role !== "superadmin" && !form.department)
+      nextErrors.department = "Select a department for this role.";
     if (form.department === "Manufacturing" && !form.assigned_process_id)
       nextErrors.assigned_process_id = "Select the employee's process.";
     if (Object.keys(nextErrors).length) {
@@ -2661,9 +2662,9 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
       <div className="module-heading">
         <div>
           <p>
-            Create the employee’s work email and password here. They then sign
-            in directly from the normal Sign in page. Only Manufacturing
-            employees need a process assignment.
+            Create Employee, Manager, Admin, or Superadmin work logins here.
+            Employee, Manager, and Admin accounts require a department; only
+            Manufacturing staff require a process assignment.
           </p>
         </div>
         <button
@@ -2709,7 +2710,7 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
           <label
             className={`field ${errors.department ? "field-invalid" : ""}`}
           >
-            <span>Department</span>
+            <span>Department {form.role === "superadmin" ? "(not required for Superadmin)" : ""}</span>
             <select
               value={form.department}
               onChange={(event) => {
@@ -2718,7 +2719,7 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
                   change("assigned_process_id", "");
               }}
             >
-              <option value="">Select department</option>
+              <option value="">{form.role === "superadmin" ? "No department" : "Select department"}</option>
               {[
                 "Manufacturing",
                 "Marketing",
@@ -2738,9 +2739,19 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
             <span>ERP role</span>
             <select
               value={form.role}
-              onChange={(event) => change("role", event.target.value)}
+              onChange={(event) => {
+                const role = event.target.value;
+                setForm({
+                  ...form,
+                  role,
+                  ...(role === "superadmin"
+                    ? { department: "", assigned_process_id: "" }
+                    : {}),
+                });
+                setErrors({ ...errors, role: "", department: "" });
+              }}
             >
-              {["employee", "manager", "admin"].map((role) => (
+              {["employee", "manager", "admin", "superadmin"].map((role) => (
                 <option key={role}>{role}</option>
               ))}
             </select>

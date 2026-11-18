@@ -34,7 +34,7 @@ Deno.serve(async (request) => {
     const password = String(body.password ?? "");
     const fullName = String(body.full_name ?? "").trim();
     const department = String(body.department ?? "").trim() || null;
-    const role = ["employee", "manager", "admin"].includes(body.role) ? body.role : "employee";
+    const role = ["employee", "manager", "admin", "superadmin"].includes(body.role) ? body.role : "employee";
     const assignedProcessId = body.assigned_process_id || null;
     if (!email || !fullName || password.length < 8) throw new Error("Enter a name, work email, and password of at least 8 characters.");
 
@@ -60,7 +60,7 @@ Deno.serve(async (request) => {
       if (passwordError) throw new Error(passwordError.message);
     }
 
-    const memberRole = role === "admin" ? "admin" : role === "manager" ? "manager" : "member";
+    const memberRole = role === "superadmin" ? "owner" : role === "admin" ? "admin" : role === "manager" ? "manager" : "member";
     const { error: membershipInsertError } = await adminClient.from("organization_members").upsert({
       organization_id: membership.organization_id,
       user_id: employeeUserId,

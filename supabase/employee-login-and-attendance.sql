@@ -47,6 +47,7 @@ begin
       workspace_id,
       auth.uid(),
       case invited_role
+        when 'superadmin' then 'owner'
         when 'admin' then 'admin'
         when 'manager' then 'manager'
         else 'member'
