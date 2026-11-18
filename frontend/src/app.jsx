@@ -1327,7 +1327,6 @@ function JobsModule({
   const [bom, setBom] = useState({
     raw_material_id: "",
     planned_quantity: "",
-    vendor_reference: "",
   });
   const createJob = async (event) => {
     event.preventDefault();
@@ -1396,9 +1395,8 @@ function JobsModule({
       material_name: material.name,
       planned_quantity: Number(bom.planned_quantity),
       unit: material.unit,
-      vendor_reference: bom.vendor_reference || null,
     });
-    setBom({ raw_material_id: "", planned_quantity: "", vendor_reference: "" });
+    setBom({ raw_material_id: "", planned_quantity: "" });
   };
   const selectedBom = bomItems.filter((item) => item.job_id === selected);
   return (
@@ -1627,14 +1625,6 @@ function JobsModule({
                 setBom({ ...bom, planned_quantity: e.target.value })
               }
             />
-            <Field
-              label="Vendor reference"
-              value={bom.vendor_reference}
-              onChange={(e) =>
-                setBom({ ...bom, vendor_reference: e.target.value })
-              }
-              placeholder="Optional vendor / source"
-            />
             <button className="primary-button compact">Add BOM item</button>
           </form>
           <section className="panel table-panel">
@@ -1646,7 +1636,6 @@ function JobsModule({
                     <th>Material</th>
                     <th>Planned quantity</th>
                     <th>Unit</th>
-                    <th>Vendor</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1655,7 +1644,6 @@ function JobsModule({
                       <td>{item.material_name}</td>
                       <td>{item.planned_quantity}</td>
                       <td>{item.unit}</td>
-                      <td>{item.vendor_reference || "—"}</td>
                     </tr>
                   ))}
                 </tbody>
