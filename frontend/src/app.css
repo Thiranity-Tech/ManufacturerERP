@@ -174,3 +174,6 @@
 .work-status { display: inline-flex; min-width: 78px; justify-content: center; padding: 5px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; }
 .work-status.pending { color: #9a6700; background: #fff4ce; }
 .work-status.completed { color: #16794a; background: #dcfae8; }
+.inventory-section-heading { margin-bottom: 14px; }
+.inventory-section-heading h3 { margin: 0 0 5px; }
+.inventory-section-heading p { margin: 0; color: #62728b; }

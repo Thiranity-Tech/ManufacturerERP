@@ -379,6 +379,7 @@ function Workspace({ session, onSignOut }) {
   const [bomItems, setBomItems] = useState([]);
   const [bomPurchaseRequests, setBomPurchaseRequests] = useState([]);
   const [processAssignments, setProcessAssignments] = useState([]);
+  const [workInProgress, setWorkInProgress] = useState([]);
   const [error, setError] = useState("");
   const [subscriptionBlocked, setSubscriptionBlocked] = useState(false);
   const [platformAdmin, setPlatformAdmin] = useState(false);
@@ -420,6 +421,7 @@ function Workspace({ session, onSignOut }) {
         bomResult,
         bomPurchaseRequestResult,
         processAssignmentResult,
+        workInProgressResult,
       ] = await Promise.all([
         supabase
           .from("products")
@@ -491,6 +493,11 @@ function Workspace({ session, onSignOut }) {
           .select("*, products(name), process_definitions(name), employees(full_name)")
           .eq("organization_id", current.id)
           .order("assigned_at", { ascending: false }),
+        supabase
+          .from("work_in_progress")
+          .select("*, products(name), process_definitions(name), employees(full_name)")
+          .eq("organization_id", current.id)
+          .order("completed_at", { ascending: false }),
       ]);
       if (
         productResult.error ||
@@ -507,6 +514,7 @@ function Workspace({ session, onSignOut }) {
         bomResult.error ||
         bomPurchaseRequestResult.error ||
         processAssignmentResult.error
+        || workInProgressResult.error
       )
         throw (
           productResult.error ||
@@ -523,6 +531,7 @@ function Workspace({ session, onSignOut }) {
           bomResult.error ||
           bomPurchaseRequestResult.error ||
           processAssignmentResult.error
+          || workInProgressResult.error
         );
       setProducts(productResult.data);
       setMaterials(materialResult.data);
@@ -538,6 +547,7 @@ function Workspace({ session, onSignOut }) {
       setBomItems(bomResult.data);
       setBomPurchaseRequests(bomPurchaseRequestResult.data);
       setProcessAssignments(processAssignmentResult.data);
+      setWorkInProgress(workInProgressResult.data);
     } catch (err) {
       setError(err.message || "Could not load workspace data.");
     } finally {
@@ -739,6 +749,7 @@ function Workspace({ session, onSignOut }) {
           bomItems={bomItems}
           bomPurchaseRequests={bomPurchaseRequests}
           processAssignments={processAssignments}
+          workInProgress={workInProgress}
           currentEmployee={currentEmployee}
           workspaceId={workspace?.id}
           addRecord={addRecord}
@@ -768,6 +779,7 @@ function Module({
   bomItems,
   bomPurchaseRequests,
   processAssignments,
+  workInProgress,
   currentEmployee,
   workspaceId,
   addRecord,
@@ -865,6 +877,7 @@ function Module({
           columns={["name", "stock"]}
           readOnly
         />
+        <WorkInProgressModule rows={workInProgress} />
         <RecordModule
           title="Finished goods"
           sectionTitle="Finished goods"
@@ -2039,6 +2052,47 @@ function PurchaseOrders({ rows, purchaseRequests, onSave, onDelete }) {
         )}
       </section>
     </>
+  );
+}
+function WorkInProgressModule({ rows }) {
+  return (
+    <section className="panel table-panel">
+      <div className="inventory-section-heading">
+        <div>
+          <h3>Work in progress</h3>
+          <p>Completed intermediate processes are tracked here until the final process moves the item to Finished Goods.</p>
+        </div>
+      </div>
+      {rows.length ? (
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Completed process</th>
+              <th>Completed by</th>
+              <th>Quantity</th>
+              <th>Completed at</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((item) => (
+              <tr key={item.id}>
+                <td>{item.products?.name || "—"}</td>
+                <td>{item.process_definitions?.name || "—"}</td>
+                <td>{item.employees?.full_name || "—"}</td>
+                <td>{item.quantity}</td>
+                <td>{new Date(item.completed_at).toLocaleString("en-IN")}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <div className="empty">
+          <Workflow size={27} />
+          No work in progress recorded.
+        </div>
+      )}
+    </section>
   );
 }
 function MaterialProcurement({
