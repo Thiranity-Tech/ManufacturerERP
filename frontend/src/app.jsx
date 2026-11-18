@@ -824,9 +824,10 @@ function Module({
       <PurchaseOrders
         rows={purchaseOrders}
         purchaseRequests={bomPurchaseRequests}
+        role={role}
         onSave={(values, editingId, bomRequestId) =>
           run(async () => {
-            const { error } = await supabase.rpc(
+            const { data: createdOrderId, error } = await supabase.rpc(
               editingId ? "update_purchase_order" : "create_purchase_order",
               editingId ? { order_id: editingId, ...values } : values,
             );
@@ -834,7 +835,7 @@ function Module({
             if (bomRequestId) {
               const { error: requestError } = await supabase
                 .from("bom_purchase_requests")
-                .update({ status: "purchased", purchased_at: new Date().toISOString() })
+                .update({ status: "ordered", purchase_order_id: createdOrderId })
                 .eq("id", bomRequestId);
               if (requestError) throw requestError;
             }
@@ -844,6 +845,15 @@ function Module({
           run(async () => {
             const { error } = await supabase.rpc("delete_purchase_order", {
               order_id: orderId,
+            });
+            if (error) throw error;
+          })
+        }
+        onReceive={(orderId, deliveredOn) =>
+          run(async () => {
+            const { error } = await supabase.rpc("receive_purchase_order", {
+              order_id: orderId,
+              delivered_on: deliveredOn,
             });
             if (error) throw error;
           })
@@ -874,7 +884,7 @@ function Module({
           empty="No raw materials received from purchase orders yet."
           fields={[]}
           onAdd={() => null}
-          columns={["name", "stock"]}
+          columns={["name", "stock", "unit", "last_delivered_at"]}
           readOnly
         />
         <WorkInProgressModule rows={workInProgress} />
@@ -1803,11 +1813,13 @@ function JobsModule({
     </>
   );
 }
-function PurchaseOrders({ rows, purchaseRequests, onSave, onDelete }) {
+function PurchaseOrders({ rows, purchaseRequests, role, onSave, onDelete, onReceive }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [bomRequestId, setBomRequestId] = useState(null);
   const [formError, setFormError] = useState("");
+  const [deliveryDates, setDeliveryDates] = useState({});
+  const canReceive = ["superadmin", "manager"].includes(role);
   const blank = {
     supplier: "",
     po_number: "",
@@ -1898,9 +1910,8 @@ function PurchaseOrders({ rows, purchaseRequests, onSave, onDelete }) {
       <div className="module-heading">
         <div>
           <p>
-            Purchase Orders are the starting point. Saving a PO immediately adds
-            its material quantity to Raw Materials inventory. Later changes
-            update Raw Materials inventory automatically.
+            Purchase Orders record ordered materials. Raw Materials inventory is
+            updated only after a Manager or Superadmin confirms delivery.
           </p>
         </div>
         <button
@@ -1920,7 +1931,7 @@ function PurchaseOrders({ rows, purchaseRequests, onSave, onDelete }) {
         <section className="panel table-panel purchase-request-panel">
           <h3>BOM material purchase requests</h3>
           <p className="table-intro">
-            These materials were planned in a Job BOM. Buy them using a Purchase Order; saving the PO adds them to Raw Materials inventory.
+            These materials were planned in a Job BOM. Create their Purchase Order here, then confirm delivery when the goods arrive.
           </p>
           <table>
             <thead>
@@ -2001,8 +2012,8 @@ function PurchaseOrders({ rows, purchaseRequests, onSave, onDelete }) {
             {editing
               ? "Save PO changes"
               : bomRequestId
-                ? "Approve purchase and add stock"
-                : "Save PO and add stock"}
+                ? "Create purchase order"
+                : "Save purchase order"}
           </button>
         </form>
       )}
@@ -2016,6 +2027,7 @@ function PurchaseOrders({ rows, purchaseRequests, onSave, onDelete }) {
                 <th>Material</th>
                 <th>Quantity</th>
                 <th>Unit</th>
+                <th>Delivery status</th>
                 <th>Total</th>
                 <th>Action</th>
               </tr>
@@ -2028,6 +2040,36 @@ function PurchaseOrders({ rows, purchaseRequests, onSave, onDelete }) {
                   <td>{row.material_name}</td>
                   <td>{row.quantity}</td>
                   <td>{row.unit}</td>
+                  <td>
+                    {row.status === "received" ? (
+                      <>Delivered {row.received_at ? new Date(row.received_at).toLocaleDateString("en-IN") : ""}</>
+                    ) : canReceive ? (
+                      <span className="delivery-action">
+                        <input
+                          type="date"
+                          value={deliveryDates[row.id] || ""}
+                          onChange={(event) =>
+                            setDeliveryDates({ ...deliveryDates, [row.id]: event.target.value })
+                          }
+                        />
+                        <button
+                          className="row-action"
+                          onClick={() => {
+                            const date = deliveryDates[row.id];
+                            if (!date) {
+                              setFormError("Choose a delivery date before marking a PO delivered.");
+                              return;
+                            }
+                            onReceive(row.id, date);
+                          }}
+                        >
+                          Mark delivered
+                        </button>
+                      </span>
+                    ) : (
+                      "Awaiting delivery approval"
+                    )}
+                  </td>
                   <td>{money.format(row.total_amount || 0)}</td>
                   <td>
                     <button className="row-action" onClick={() => edit(row)}>
