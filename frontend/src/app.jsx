@@ -88,7 +88,7 @@ const navigation = [
   },
   {
     id: "people",
-    label: "People & attendance",
+    label: "People",
     icon: UserRoundCheck,
     roles: ["superadmin", "admin"],
   },
@@ -334,14 +334,14 @@ function Field({ label, type = "text", ...props }) {
     </label>
   );
 }
-function PasswordField({ value, onChange, placeholder, error = "" }) {
+function PasswordField({ value, onChange, placeholder, error = "", required = true, label = "Password" }) {
   const [visible, setVisible] = useState(false);
   return (
     <label className={`field ${error ? "field-invalid" : ""}`}>
-      <span>Password</span>
+      <span>{label}</span>
       <span className="password-input">
         <input
-          required
+          required={required}
           aria-invalid={Boolean(error)}
           type={visible ? "text" : "password"}
           value={value}
@@ -2600,6 +2600,7 @@ function ExpenseModule({ rows, onAdd }) {
 }
 function PeopleModule({ rows, processes, onCreateLogin }) {
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
   const [errors, setErrors] = useState({});
   const [form, setForm] = useState({
     full_name: "",
@@ -2621,6 +2622,18 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
     setForm({ ...form, [key]: value });
     setErrors({ ...errors, [key]: "" });
   };
+  const resetForm = () => {
+    setEditing(null);
+    setErrors({});
+    setForm({
+      full_name: "",
+      email: "",
+      password: "",
+      department: "",
+      role: "employee",
+      assigned_process_id: "",
+    });
+  };
   const submit = async (event) => {
     event.preventDefault();
     const nextErrors = {};
@@ -2628,7 +2641,9 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
       nextErrors.full_name = "Enter the employee's full name.";
     if (!/^\S+@\S+\.\S+$/.test(form.email.trim()))
       nextErrors.email = "Enter a valid work email address.";
-    if (form.password.length < 8)
+    if (!editing && form.password.length < 8)
+      nextErrors.password = "Password must contain at least 8 characters.";
+    if (editing && form.password && form.password.length < 8)
       nextErrors.password = "Password must contain at least 8 characters.";
     if (form.role !== "superadmin" && !form.department)
       nextErrors.department = "Select a department for this role.";
@@ -2640,21 +2655,36 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
     }
     const saved = await onCreateLogin({
       ...form,
+      action: editing ? "update" : "create",
+      employee_id: editing?.id,
       email: form.email.trim().toLowerCase(),
       assigned_process_id:
         form.department === "Manufacturing" ? form.assigned_process_id : null,
     });
     if (saved) {
       setOpen(false);
-      setErrors({});
-      setForm({
-        full_name: "",
-        email: "",
-        password: "",
-        department: "",
-        role: "employee",
-        assigned_process_id: "",
-      });
+      resetForm();
+    }
+  };
+  const editEmployee = (row) => {
+    setEditing(row);
+    setForm({
+      full_name: row.full_name || "",
+      email: row.email || "",
+      password: "",
+      department: row.department || "",
+      role: row.role || "employee",
+      assigned_process_id: row.assigned_process_id || "",
+    });
+    setErrors({});
+    setOpen(true);
+  };
+  const deleteEmployee = async (row) => {
+    if (!window.confirm(`Delete ${row.full_name}'s account? They will no longer be able to sign in.`)) return;
+    const deleted = await onCreateLogin({ action: "delete", employee_id: row.id });
+    if (deleted && editing?.id === row.id) {
+      setOpen(false);
+      resetForm();
     }
   };
   return (
@@ -2670,8 +2700,9 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
         <button
           className="primary-button compact"
           onClick={() => {
-            setOpen(!open);
-            setErrors({});
+            const nextOpen = !open;
+            setOpen(nextOpen);
+            if (nextOpen) resetForm();
           }}
         >
           <Plus size={17} />
@@ -2704,8 +2735,10 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
           <PasswordField
             value={form.password}
             onChange={(event) => change("password", event.target.value)}
-            placeholder="Set a temporary password"
+            placeholder={editing ? "Leave blank to keep current password" : "Set a temporary password"}
             error={errors.password}
+            required={!editing}
+            label={editing ? "New password (optional)" : "Password"}
           />
           <label
             className={`field ${errors.department ? "field-invalid" : ""}`}
@@ -2785,7 +2818,7 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
             </label>
           )}
           <button className="primary-button compact">
-            Create employee login
+            {editing ? "Save employee changes" : "Create employee login"}
           </button>
         </form>
       )}
@@ -2800,6 +2833,7 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
                 <th>Assigned process</th>
                 <th>Role</th>
                 <th>Login</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -2812,6 +2846,14 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
                     {processes.find(
                       (process) => process.id === row.assigned_process_id,
                     )?.name || "—"}
+                  </td>
+                  <td>
+                    <button className="row-action" onClick={() => editEmployee(row)}>
+                      Edit
+                    </button>
+                    <button className="row-action row-delete" onClick={() => deleteEmployee(row)}>
+                      Delete
+                    </button>
                   </td>
                   <td>{row.role}</td>
                   <td>

@@ -29,19 +29,81 @@ Deno.serve(async (request) => {
       .maybeSingle();
     if (membershipError || !membership) throw new Error("Only a workspace owner or admin can create employee logins.");
 
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
     const body = await request.json();
+    const action = String(body.action ?? "create");
     const email = String(body.email ?? "").trim().toLowerCase();
     const password = String(body.password ?? "");
     const fullName = String(body.full_name ?? "").trim();
     const department = String(body.department ?? "").trim() || null;
     const role = ["employee", "manager", "admin", "superadmin"].includes(body.role) ? body.role : "employee";
     const assignedProcessId = body.assigned_process_id || null;
-    if (!email || !fullName || password.length < 8) throw new Error("Enter a name, work email, and password of at least 8 characters.");
+    const memberRole = role === "superadmin" ? "owner" : role === "admin" ? "admin" : role === "manager" ? "manager" : "member";
 
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    );
+    if (["update", "delete"].includes(action)) {
+      const employeeId = String(body.employee_id ?? "");
+      if (!employeeId) throw new Error("Employee record not found.");
+      const { data: existingEmployee, error: existingEmployeeError } = await adminClient
+        .from("employees")
+        .select("id, email")
+        .eq("id", employeeId)
+        .eq("organization_id", membership.organization_id)
+        .maybeSingle();
+      if (existingEmployeeError || !existingEmployee) throw new Error("Employee record not found.");
+      if (existingEmployee.email.toLowerCase() === user.email?.toLowerCase()) {
+        throw new Error("You cannot change or delete your own administrator account here.");
+      }
+
+      const { data: users, error: usersError } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      const employeeUser = users?.users.find((candidate) => candidate.email?.toLowerCase() === existingEmployee.email.toLowerCase());
+      if (usersError) throw new Error(usersError.message);
+
+      if (action === "delete") {
+        if (employeeUser) {
+          const { error: deleteAuthError } = await adminClient.auth.admin.deleteUser(employeeUser.id);
+          if (deleteAuthError) throw new Error(deleteAuthError.message);
+        }
+        const { error: deleteEmployeeError } = await adminClient
+          .from("employees")
+          .delete()
+          .eq("id", existingEmployee.id);
+        if (deleteEmployeeError) throw new Error(deleteEmployeeError.message);
+        return Response.json({ success: true }, { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      if (!email || !fullName || (password && password.length < 8)) {
+        throw new Error("Enter a name, valid work email, and a password of at least 8 characters when changing the password.");
+      }
+      if (role !== "superadmin" && !department) throw new Error("Select a department for this role.");
+      if (employeeUser) {
+        const authUpdate = {
+          email,
+          email_confirm: true,
+          user_metadata: { full_name: fullName },
+          ...(password ? { password } : {}),
+        };
+        const { error: updateAuthError } = await adminClient.auth.admin.updateUserById(employeeUser.id, authUpdate);
+        if (updateAuthError) throw new Error(updateAuthError.message);
+        const { error: updateMemberError } = await adminClient
+          .from("organization_members")
+          .update({ role: memberRole })
+          .eq("organization_id", membership.organization_id)
+          .eq("user_id", employeeUser.id);
+        if (updateMemberError) throw new Error(updateMemberError.message);
+      }
+      const { error: updateEmployeeError } = await adminClient
+        .from("employees")
+        .update({ full_name: fullName, email, department, role, assigned_process_id: assignedProcessId })
+        .eq("id", existingEmployee.id);
+      if (updateEmployeeError) throw new Error(updateEmployeeError.message);
+      return Response.json({ success: true }, { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (!email || !fullName || password.length < 8) throw new Error("Enter a name, work email, and password of at least 8 characters.");
+    if (role !== "superadmin" && !department) throw new Error("Select a department for this role.");
     const { data: created, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password,
@@ -60,7 +122,6 @@ Deno.serve(async (request) => {
       if (passwordError) throw new Error(passwordError.message);
     }
 
-    const memberRole = role === "superadmin" ? "owner" : role === "admin" ? "admin" : role === "manager" ? "manager" : "member";
     const { error: membershipInsertError } = await adminClient.from("organization_members").upsert({
       organization_id: membership.organization_id,
       user_id: employeeUserId,
