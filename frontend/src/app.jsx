@@ -2598,7 +2598,7 @@ function ExpenseModule({ rows, onAdd }) {
     </>
   );
 }
-function PeopleModule({ rows, processes, onCreateLogin }) {
+function PeopleModule({ rows, onCreateLogin }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [errors, setErrors] = useState({});
@@ -2610,14 +2610,6 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
     role: "employee",
     assigned_process_id: "",
   });
-  const uniqueProcesses = [
-    ...new Map(
-      processes.map((process) => [
-        `${process.product_id}:${process.name.trim().toLowerCase()}`,
-        process,
-      ]),
-    ).values(),
-  ];
   const change = (key, value) => {
     setForm({ ...form, [key]: value });
     setErrors({ ...errors, [key]: "" });
@@ -2647,8 +2639,6 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
       nextErrors.password = "Password must contain at least 8 characters.";
     if (form.role !== "superadmin" && !form.department)
       nextErrors.department = "Select a department for this role.";
-    if (form.department === "Manufacturing" && !form.assigned_process_id)
-      nextErrors.assigned_process_id = "Select the employee's process.";
     if (Object.keys(nextErrors).length) {
       setErrors(nextErrors);
       return;
@@ -2658,8 +2648,7 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
       action: editing ? "update" : "create",
       employee_id: editing?.id,
       email: form.email.trim().toLowerCase(),
-      assigned_process_id:
-        form.department === "Manufacturing" ? form.assigned_process_id : null,
+      assigned_process_id: null,
     });
     if (saved) {
       setOpen(false);
@@ -2693,8 +2682,7 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
         <div>
           <p>
             Create Employee, Manager, Admin, or Superadmin work logins here.
-            Employee, Manager, and Admin accounts require a department; only
-            Manufacturing staff require a process assignment.
+            Employee, Manager, and Admin accounts require a department.
           </p>
         </div>
         <button
@@ -2748,8 +2736,6 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
               value={form.department}
               onChange={(event) => {
                 change("department", event.target.value);
-                if (event.target.value !== "Manufacturing")
-                  change("assigned_process_id", "");
               }}
             >
               <option value="">{form.role === "superadmin" ? "No department" : "Select department"}</option>
@@ -2789,34 +2775,6 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
               ))}
             </select>
           </label>
-          {form.department === "Manufacturing" && (
-            <label
-              className={`field ${errors.assigned_process_id ? "field-invalid" : ""}`}
-            >
-              <span>Assigned process</span>
-              <select
-                value={form.assigned_process_id}
-                onChange={(event) =>
-                  change("assigned_process_id", event.target.value)
-                }
-              >
-                <option value="">Select process</option>
-                {uniqueProcesses.map((process) => (
-                  <option key={process.id} value={process.id}>
-                    {process.name}
-                    {process.products?.name
-                      ? ` — ${process.products.name}`
-                      : ""}
-                  </option>
-                ))}
-              </select>
-              {errors.assigned_process_id && (
-                <small className="field-error">
-                  {errors.assigned_process_id}
-                </small>
-              )}
-            </label>
-          )}
           <button className="primary-button compact">
             {editing ? "Save employee changes" : "Create employee login"}
           </button>
@@ -2830,7 +2788,6 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
                 <th>Employee</th>
                 <th>Email</th>
                 <th>Department</th>
-                <th>Assigned process</th>
                 <th>Role</th>
                 <th>Login</th>
                 <th>Action</th>
@@ -2842,10 +2799,11 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
                   <td>{row.full_name}</td>
                   <td>{row.email}</td>
                   <td>{row.department || "—"}</td>
+                  <td>{row.role}</td>
                   <td>
-                    {processes.find(
-                      (process) => process.id === row.assigned_process_id,
-                    )?.name || "—"}
+                    {row.login_status === "active"
+                      ? "Active"
+                      : "No login created"}
                   </td>
                   <td>
                     <button className="row-action" onClick={() => editEmployee(row)}>
@@ -2854,12 +2812,6 @@ function PeopleModule({ rows, processes, onCreateLogin }) {
                     <button className="row-action row-delete" onClick={() => deleteEmployee(row)}>
                       Delete
                     </button>
-                  </td>
-                  <td>{row.role}</td>
-                  <td>
-                    {row.login_status === "active"
-                      ? "Active"
-                      : "No login created"}
                   </td>
                 </tr>
               ))}
