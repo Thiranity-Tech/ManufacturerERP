@@ -1610,11 +1610,13 @@ function JobsModule({
                 }
               >
                 <option value="">Select material from Raw Materials</option>
-                {materials.map((material) => (
+                {materials
+                  .filter((material) => Number(material.stock) > 0)
+                  .map((material) => (
                   <option key={material.id} value={material.id}>
                     {material.name} — available {material.stock} {material.unit}
                   </option>
-                ))}
+                  ))}
               </select>
             </label>
             <Field
