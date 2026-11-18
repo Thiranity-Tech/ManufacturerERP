@@ -377,6 +377,7 @@ function Workspace({ session, onSignOut }) {
   const [attendance, setAttendance] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [bomItems, setBomItems] = useState([]);
+  const [bomPurchaseRequests, setBomPurchaseRequests] = useState([]);
   const [error, setError] = useState("");
   const [subscriptionBlocked, setSubscriptionBlocked] = useState(false);
   const [platformAdmin, setPlatformAdmin] = useState(false);
@@ -416,6 +417,7 @@ function Workspace({ session, onSignOut }) {
         attendanceResult,
         jobResult,
         bomResult,
+        bomPurchaseRequestResult,
       ] = await Promise.all([
         supabase
           .from("products")
@@ -477,6 +479,11 @@ function Workspace({ session, onSignOut }) {
           .select("*")
           .eq("organization_id", current.id)
           .order("created_at"),
+        supabase
+          .from("bom_purchase_requests")
+          .select("*, jobs(job_name)")
+          .eq("organization_id", current.id)
+          .order("created_at", { ascending: false }),
       ]);
       if (
         productResult.error ||
@@ -490,7 +497,8 @@ function Workspace({ session, onSignOut }) {
         processResult.error ||
         attendanceResult.error ||
         jobResult.error ||
-        bomResult.error
+        bomResult.error ||
+        bomPurchaseRequestResult.error
       )
         throw (
           productResult.error ||
@@ -504,7 +512,8 @@ function Workspace({ session, onSignOut }) {
           processResult.error ||
           attendanceResult.error ||
           jobResult.error ||
-          bomResult.error
+          bomResult.error ||
+          bomPurchaseRequestResult.error
         );
       setProducts(productResult.data);
       setMaterials(materialResult.data);
@@ -518,6 +527,7 @@ function Workspace({ session, onSignOut }) {
       setAttendance(attendanceResult.data);
       setJobs(jobResult.data);
       setBomItems(bomResult.data);
+      setBomPurchaseRequests(bomPurchaseRequestResult.data);
     } catch (err) {
       setError(err.message || "Could not load workspace data.");
     } finally {
@@ -716,6 +726,7 @@ function Workspace({ session, onSignOut }) {
           attendance={attendance}
           jobs={jobs}
           bomItems={bomItems}
+          bomPurchaseRequests={bomPurchaseRequests}
           currentEmployee={currentEmployee}
           workspaceId={workspace?.id}
           addRecord={addRecord}
@@ -743,6 +754,7 @@ function Module({
   attendance,
   jobs,
   bomItems,
+  bomPurchaseRequests,
   currentEmployee,
   workspaceId,
   addRecord,
@@ -786,13 +798,21 @@ function Module({
     return (
       <PurchaseOrders
         rows={purchaseOrders}
-        onSave={(values, editingId) =>
+        purchaseRequests={bomPurchaseRequests}
+        onSave={(values, editingId, bomRequestId) =>
           run(async () => {
             const { error } = await supabase.rpc(
               editingId ? "update_purchase_order" : "create_purchase_order",
               editingId ? { order_id: editingId, ...values } : values,
             );
             if (error) throw error;
+            if (bomRequestId) {
+              const { error: requestError } = await supabase
+                .from("bom_purchase_requests")
+                .update({ status: "purchased", purchased_at: new Date().toISOString() })
+                .eq("id", bomRequestId);
+              if (requestError) throw requestError;
+            }
           })
         }
         onDelete={(orderId) =>
@@ -1327,8 +1347,9 @@ function JobsModule({
     sheet_count: "",
   });
   const [bom, setBom] = useState({
-    raw_material_id: "",
+    material_name: "",
     planned_quantity: "",
+    unit: "",
   });
   const clearJobForm = () => {
     setEditing(null);
@@ -1445,16 +1466,17 @@ function JobsModule({
   };
   const addBom = async (event) => {
     event.preventDefault();
-    const material = materials.find((item) => item.id === bom.raw_material_id);
-    if (!selected || !material) return;
-    await addRecord("job_bom_items", {
-      job_id: selected,
-      raw_material_id: material.id,
-      material_name: material.name,
-      planned_quantity: Number(bom.planned_quantity),
-      unit: material.unit,
+    if (!selected || !bom.material_name.trim() || Number(bom.planned_quantity) <= 0 || !bom.unit) return;
+    const added = await run(async () => {
+      const { error } = await supabase.rpc("add_job_bom_material", {
+        target_job_id: selected,
+        material: bom.material_name.trim(),
+        material_quantity: Number(bom.planned_quantity),
+        material_unit: bom.unit,
+      });
+      if (error) throw error;
     });
-    setBom({ raw_material_id: "", planned_quantity: "" });
+    if (added) setBom({ material_name: "", planned_quantity: "", unit: "" });
   };
   const selectedBom = bomItems.filter((item) => item.job_id === selected);
   return (
@@ -1683,22 +1705,20 @@ function JobsModule({
           <form className="record-form panel" onSubmit={addBom}>
             <label className="field">
               <span>BOM material</span>
-              <select
+              <input
                 required
-                value={bom.raw_material_id}
+                list="raw-material-suggestions"
+                value={bom.material_name}
                 onChange={(e) =>
-                  setBom({ ...bom, raw_material_id: e.target.value })
+                  setBom({ ...bom, material_name: e.target.value })
                 }
-              >
-                <option value="">Select material from Raw Materials</option>
-                {materials
-                  .filter((material) => Number(material.stock) > 0)
-                  .map((material) => (
-                  <option key={material.id} value={material.id}>
-                    {material.name} — available {material.stock} {material.unit}
-                  </option>
-                  ))}
-              </select>
+                placeholder="Type a material name"
+              />
+              <datalist id="raw-material-suggestions">
+                {materials.map((material) => (
+                  <option key={material.id} value={material.name} />
+                ))}
+              </datalist>
             </label>
             <Field
               label="Planned quantity"
@@ -1707,6 +1727,12 @@ function JobsModule({
               onChange={(e) =>
                 setBom({ ...bom, planned_quantity: e.target.value })
               }
+            />
+            <Field
+              label="Unit"
+              type="unit"
+              value={bom.unit}
+              onChange={(e) => setBom({ ...bom, unit: e.target.value })}
             />
             <button className="primary-button compact">Add BOM item</button>
           </form>
@@ -1740,9 +1766,10 @@ function JobsModule({
     </>
   );
 }
-function PurchaseOrders({ rows, onSave, onDelete }) {
+function PurchaseOrders({ rows, purchaseRequests, onSave, onDelete }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [bomRequestId, setBomRequestId] = useState(null);
   const [formError, setFormError] = useState("");
   const blank = {
     supplier: "",
@@ -1774,10 +1801,12 @@ function PurchaseOrders({ rows, onSave, onDelete }) {
         material_unit_cost: Number(po.material_unit_cost),
       },
       editing?.id,
+      bomRequestId,
     );
     if (saved) {
       setOpen(false);
       setEditing(null);
+      setBomRequestId(null);
       setForm(blank);
     }
   };
@@ -1792,6 +1821,22 @@ function PurchaseOrders({ rows, onSave, onDelete }) {
       material_unit: row.unit || "",
       material_unit_cost: row.unit_cost || "",
     });
+    setBomRequestId(null);
+    setOpen(true);
+  };
+  const buyForBomRequest = (request) => {
+    setEditing(null);
+    setBomRequestId(request.id);
+    setForm({
+      supplier: "",
+      po_number: "",
+      material: request.material_name || "",
+      material_code: "",
+      material_quantity: request.planned_quantity || "",
+      material_unit: request.unit || "",
+      material_unit_cost: "",
+    });
+    setFormError("");
     setOpen(true);
   };
   const remove = async (row) => {
@@ -1825,6 +1870,7 @@ function PurchaseOrders({ rows, onSave, onDelete }) {
           className="primary-button compact"
           onClick={() => {
             setEditing(null);
+            setBomRequestId(null);
             setForm(blank);
             setOpen(!open);
           }}
@@ -1833,6 +1879,45 @@ function PurchaseOrders({ rows, onSave, onDelete }) {
           Create purchase order
         </button>
       </div>
+      {purchaseRequests.filter((request) => request.status === "pending").length > 0 && (
+        <section className="panel table-panel purchase-request-panel">
+          <h3>BOM material purchase requests</h3>
+          <p className="table-intro">
+            These materials were planned in a Job BOM. Buy them using a Purchase Order; saving the PO adds them to Raw Materials inventory.
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Job</th>
+                <th>Material</th>
+                <th>Quantity</th>
+                <th>Unit</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {purchaseRequests
+                .filter((request) => request.status === "pending")
+                .map((request) => (
+                  <tr key={request.id}>
+                    <td>{request.jobs?.job_name || "—"}</td>
+                    <td>{request.material_name}</td>
+                    <td>{request.planned_quantity}</td>
+                    <td>{request.unit}</td>
+                    <td>
+                      <button
+                        className="row-action"
+                        onClick={() => buyForBomRequest(request)}
+                      >
+                        Buy and create PO
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </section>
+      )}
       {open && (
         <form className="record-form panel" onSubmit={submit}>
           <Field
@@ -1876,7 +1961,11 @@ function PurchaseOrders({ rows, onSave, onDelete }) {
           />
           {formError && <p className="form-error">{formError}</p>}
           <button className="primary-button compact">
-            {editing ? "Save PO changes" : "Save PO and add stock"}
+            {editing
+              ? "Save PO changes"
+              : bomRequestId
+                ? "Approve purchase and add stock"
+                : "Save PO and add stock"}
           </button>
         </form>
       )}
